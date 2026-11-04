@@ -1,0 +1,1372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UVA Housing &amp; Residence Life — Evaluations Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0b0f19;--surf:#111827;--surf2:#1a2032;--border:#1e2740;
+  --text:#f0f4ff;--muted:#6b7694;--label:#3d4666;
+  --green:#00d67a;--blue:#3d7fff;--orange:#E57200;
+  --red:#ff4d4d;--yellow:#ffc700;--r:10px;
+}
+:root[data-theme="light"]{
+  --bg:#f4f6fb;--surf:#ffffff;--surf2:#eef1f6;--border:#dde3ee;
+  --text:#131a2b;--muted:#5a6480;--label:#97a1ba;
+  --green:#00a866;--blue:#3d7fff;--orange:#E57200;
+  --red:#e63946;--yellow:#a17f00;
+}
+[data-theme="light"] #splash{background:#e9edf5;}
+.theme-toggle{position:fixed;top:20px;right:20px;background:var(--surf);border:1px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:1000;transition:background .15s,color .15s,opacity .15s;}
+.theme-toggle:hover{opacity:.8;}
+.theme-toggle svg{width:18px;height:18px;}
+.theme-toggle .icon-sun{display:none;}
+[data-theme="light"] .theme-toggle .icon-sun{display:block;}
+[data-theme="light"] .theme-toggle .icon-moon{display:none;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;}
+
+#splash{position:fixed;inset:0;background:#070a12;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;z-index:999;}
+#splash.gone{display:none;}
+.splash-logo{font-size:2.2rem;font-weight:900;letter-spacing:-1.5px;display:flex;justify-content:center;width:100%;}
+.splash-logo span{color:var(--orange);}
+.splash-logo img{height:240px;max-width:420px;width:auto;display:block;margin:0 auto;}
+.splash-logo-wrap{background:#ffffff;border-radius:16px;padding:16px 24px;display:flex;justify-content:center;width:fit-content;margin:0 auto;}
+.splash-sub{color:var(--muted);font-size:.9rem;text-align:center;line-height:1.6;}
+.splash-btn{background:var(--orange);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-size:1rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:10px;transition:opacity .15s;justify-content:center;}
+.splash-btn:hover{opacity:.88;}
+.splash-btn svg{width:20px;height:20px;}
+.splash-note{font-size:.75rem;color:var(--label);text-align:center;margin-top:4px;}
+.splash-card{background:var(--surf);border:1px solid var(--border);border-radius:16px;padding:44px 40px;width:420px;max-width:92vw;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center;}
+
+.loading-bar{width:200px;height:3px;background:var(--surf2);border-radius:2px;overflow:hidden;}
+.loading-fill{height:100%;background:var(--orange);border-radius:2px;animation:load 1.4s ease-in-out infinite;}
+@keyframes load{0%{width:0;margin-left:0}50%{width:60%;margin-left:20%}100%{width:0;margin-left:100%}}
+.rp-sel{width:100%;padding:10px 13px;background:var(--surf2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;font-family:inherit;}
+.rp-sel:focus{outline:2px solid var(--orange);border-color:transparent;}
+.loading-text{font-size:.85rem;color:var(--muted);}
+
+.dev-panel{background:rgba(229,114,0,.08);border:1px solid rgba(229,114,0,.2);border-radius:10px;padding:16px 20px;width:420px;max-width:92vw;text-align:center;}
+.dev-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--orange);margin-bottom:12px;}
+.dev-row{display:flex;gap:8px;margin-bottom:8px;}
+.dev-sel{flex:1;padding:8px 10px;background:var(--surf2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:.85rem;font-family:inherit;}
+.dev-btn{padding:8px 16px;background:var(--orange);color:#fff;border:none;border-radius:7px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;}
+
+#app{display:none;min-height:100vh;flex-direction:column;}
+#app.on{display:flex;}
+header{background:var(--surf);border-bottom:1px solid var(--border);height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:100;}
+.h-brand{font-size:1rem;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:9px;}
+.h-dot{width:7px;height:7px;border-radius:50%;background:var(--orange);}
+.h-right{display:flex;align-items:center;gap:12px;font-size:.83rem;}
+.h-name{color:var(--muted);}
+.h-source{font-size:.7rem;color:var(--label);display:flex;align-items:center;gap:5px;}
+.h-source .live-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.role-pill{background:rgba(229,114,0,.18);color:var(--orange);border-radius:20px;padding:2px 11px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
+.h-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:.78rem;font-family:inherit;transition:color .12s;}
+.h-btn:hover{color:var(--text);}
+.layout{display:flex;flex:1;}
+
+nav{width:204px;background:var(--surf);border-right:1px solid var(--border);padding:20px 0;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;flex-shrink:0;}
+.n-sec{padding:0 15px 5px;font-size:.65rem;font-weight:700;color:var(--label);text-transform:uppercase;letter-spacing:1.2px;margin-top:18px;}
+.n-link{display:block;padding:8px 17px;color:var(--muted);font-size:.84rem;border-left:2px solid transparent;cursor:pointer;transition:all .12s;font-weight:500;user-select:none;}
+.n-link:hover{color:var(--text);background:var(--surf2);}
+.n-link.on{color:var(--text);background:var(--surf2);border-left-color:var(--orange);font-weight:600;}
+
+.content{flex:1;padding:24px;overflow-y:auto;min-width:0;}
+.sec{display:none;}.sec.on{display:block;}
+.ph{margin-bottom:22px;}
+.ph h1{font-size:1.4rem;font-weight:800;letter-spacing:-.4px;}
+.ph p{color:var(--muted);margin-top:4px;font-size:.84rem;}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:13px;margin-bottom:20px;}
+.sc{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:18px 18px 15px;}
+.sc-lbl{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:7px;}
+.sc-val{font-size:1.9rem;font-weight:900;line-height:1;letter-spacing:-.5px;}
+.sc-sub{font-size:.73rem;color:var(--muted);margin-top:3px;}
+
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:16px;}
+.card-t{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:1.1px;color:var(--muted);margin-bottom:16px;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:860px){.two{grid-template-columns:1fr;}}
+
+.sb{margin-bottom:14px;}
+.sb-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:5px;}
+.sb-lbl{color:var(--muted);font-size:.82rem;line-height:1.4;flex:1;}
+.sb-val{font-weight:700;color:var(--text);font-size:.88rem;white-space:nowrap;padding-top:1px;}
+.track{height:7px;background:var(--surf2);border-radius:4px;overflow:hidden;}
+.fill{height:100%;border-radius:4px;transition:width .5s;}
+.fill.hi{background:var(--green);}
+.fill.md{background:var(--yellow);}
+.fill.lo{background:var(--red);}
+
+.tbl{width:100%;border-collapse:collapse;font-size:.83rem;}
+.tbl th{background:var(--surf2);padding:8px 13px;text-align:left;font-weight:700;color:var(--muted);font-size:.67rem;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border);}
+.tbl td{padding:9px 13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.tbl tr:hover td{background:var(--surf2);}
+.chip{display:inline-block;padding:2px 9px;border-radius:20px;font-weight:700;font-size:.76rem;}
+.ch{background:rgba(0,214,122,.12);color:var(--green);}
+.cm{background:rgba(255,199,0,.12);color:var(--yellow);}
+.cl{background:rgba(255,77,77,.12);color:var(--red);}
+.cb{background:rgba(61,127,255,.12);color:var(--blue);}
+.cn{background:var(--surf2);color:var(--muted);}
+.ctag{display:inline-block;background:rgba(229,114,0,.14);color:var(--orange);border-radius:5px;padding:1px 7px;font-size:.7rem;font-weight:600;}
+
+.acc{border:1px solid var(--border);border-radius:var(--r);margin-bottom:10px;overflow:hidden;}
+.acc-h{padding:12px 16px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:.88rem;background:var(--surf);user-select:none;}
+.acc-h:hover{background:var(--surf2);}
+.acc-h .chv{font-size:.7rem;color:var(--muted);transition:transform .2s;}
+.acc-h.open .chv{transform:rotate(180deg);}
+.acc-b{display:none;padding:16px;background:var(--bg);border-top:1px solid var(--border);}
+.acc-b.open{display:block;}
+
+.rlist{list-style:none;}
+.rlist li{padding:9px 13px;background:var(--surf2);border-radius:7px;margin-bottom:7px;font-size:.84rem;line-height:1.5;border-left:2px solid var(--border);}
+.cbanner{background:rgba(229,114,0,.09);border:1px solid rgba(229,114,0,.25);border-radius:8px;padding:12px 15px;margin-bottom:14px;}
+.cbanner strong{color:var(--orange);font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;}
+.frow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.frow label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);}
+.frow select{padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.82rem;background:var(--surf);color:var(--text);font-family:inherit;}
+.back-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 13px;border-radius:6px;cursor:pointer;font-size:.8rem;margin-bottom:16px;font-family:inherit;}
+.back-btn:hover{color:var(--text);}
+.vbtn{background:var(--surf2);border:1px solid var(--border);color:var(--muted);padding:3px 11px;border-radius:5px;cursor:pointer;font-size:.76rem;font-weight:600;font-family:inherit;}
+.vbtn:hover{color:var(--text);}
+.empty{text-align:center;padding:48px;color:var(--muted);}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;}
+.leg{display:flex;align-items:center;gap:5px;font-size:.76rem;color:var(--muted);}
+.ldot{width:9px;height:9px;border-radius:50%;}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark mode" aria-label="Toggle light or dark mode">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+  </button>
+  <div class="splash-card">
+    <div class="splash-logo"><div class="splash-logo-wrap"><img src="logo.png" alt="Resident Staff"></div></div>
+    <div class="splash-sub">RA Evaluations Dashboard</div>
+
+    <!-- PIN login -->
+    <div id="login-pin-step" style="width:100%">
+      <input type="text" id="login-pin" class="rp-sel" placeholder="6-digit PIN" maxlength="6" inputmode="numeric" pattern="[0-9]*" style="width:100%;margin:14px 0 10px;padding:10px 12px;text-align:center;letter-spacing:6px;font-size:1.2rem;" />
+      <button class="splash-btn" onclick="pinLogin()" style="width:100%">Enter Dashboard</button>
+      <div class="splash-note" style="margin-top:10px">Enter the 6-digit PIN you were given</div>
+    </div>
+
+    <div id="login-error" style="display:none;color:var(--red);font-size:.83rem;margin-top:10px"></div>
+
+    <div id="loading-state" style="display:none;flex-direction:column;align-items:center;gap:12px;margin-top:14px;">
+      <div class="loading-text" id="loading-msg">Loading…</div>
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="h-brand"><div class="h-dot"></div>UVA Housing &amp; Residence Life — Evaluations Portal</div>
+    <div class="h-right">
+      <span class="h-source" id="h-updated"></span>
+      <span class="h-name" id="h-name"></span>
+      <span class="role-pill" id="h-role"></span>
+      <button class="h-btn" onclick="doLogout()">Log Out</button>
+    </div>
+  </header>
+  <div class="layout">
+    <nav id="nav"></nav>
+    <div class="content">
+
+      <div class="sec" id="s-my-down">
+        <div class="ph"><h1>My Down Evaluation</h1><p>Your supervisor's evaluation of you</p></div>
+        <div id="my-down-card"></div>
+      </div>
+
+      <div class="sec" id="s-sr-downeval">
+        <div class="ph"><h1>Submit My Down Evaluations</h1></div>
+        <div class="card" id="sr-downeval-card"></div>
+      </div>
+
+      <div class="sec" id="s-ra-upeval">
+        <div class="ph"><h1>Submit My Up Evaluation</h1></div>
+        <div class="card" id="ra-upeval-card"></div>
+      </div>
+
+      <div class="sec" id="s-ra-results">
+        <div class="ph"><h1>My Evaluation Results</h1><p id="ra-meta"></p></div>
+        <div id="ra-refresh-banner"></div>
+        <div class="stats" id="ra-stats"></div>
+        <div class="card"><div class="card-t">Score Breakdown</div><div id="ra-q5"></div></div>
+        <div class="card"><div class="card-t">What has your RA done to make you feel connected to your residential community this semester?</div><div id="ra-q6"></div></div>
+        <div class="card"><div class="card-t">Share a moment or a story where your RA made a positive impact on you.</div><div id="ra-q8"></div></div>
+        <div class="card"><div class="card-t">How else could your RA better serve you?</div><div id="ra-q9"></div></div>
+      </div>
+
+      <div class="sec" id="s-sr-ras">
+        <div class="ph"><h1>My RAs</h1><p id="sr-ra-sub"></p></div>
+        <div class="stats" id="sr-ra-stats"></div>
+        <div id="sr-ra-list"></div>
+      </div>
+
+      <div class="sec" id="s-sr-assoc">
+        <div class="ph"><h1 id="sr-assoc-title">Association Overview</h1><p>Aggregated results across your association</p></div>
+        <div class="stats" id="sr-assoc-stats"></div>
+        <div class="card"><div class="card-t">Response Rate Thresholds</div><div id="sr-assoc-thresh"></div></div>
+        <div class="card" style="margin-bottom:16px"><div class="card-t">RA Score Comparison</div><div style="height:260px;position:relative"><canvas id="c-sr-ra"></canvas></div></div>
+        <div class="card"><div class="card-t">Category Averages</div><div style="height:220px;position:relative"><canvas id="c-sr-cat"></canvas></div></div>
+      </div>
+
+      <div class="sec" id="s-adm-analytics">
+        <div class="ph"><h1>Analytics Overview</h1><p>All associations · All RAs</p></div>
+        <div class="stats" id="adm-stats"></div>
+        <div class="card" style="margin-bottom:16px"><div class="card-t">Category Averages by Association Type</div><div style="height:430px;position:relative"><canvas id="c-adm-cat"></canvas></div></div>
+        <div class="two">
+          <div class="card"><div class="card-t">Score by Association</div><div style="height:420px;position:relative"><canvas id="c-adm-assoc"></canvas></div></div>
+          <div class="card"><div class="card-t">Score Distribution</div><div id="adm-dist-sub" style="color:var(--muted);font-size:.78rem;margin:-6px 0 8px"></div><div style="height:310px;position:relative"><canvas id="c-adm-dist"></canvas></div><div class="legend" id="lg-adm-dist"></div></div>
+        </div>
+      </div>
+
+      <div class="sec" id="s-adm-assocs">
+        <div class="ph"><h1>All Associations</h1><p>Sorted by average score</p></div>
+        <div class="frow">
+          <label>Housing Type:</label>
+          <select id="f-housing" onchange="renderAdmAssocs()">
+            <option value="">All</option><option>First-Year</option><option>Upperclass</option><option>Residential College</option>
+          </select>
+        </div>
+        <div class="card"><div id="adm-assoc-tbl"></div></div>
+      </div>
+
+      <div class="sec" id="s-adm-ras">
+        <div class="ph"><h1>All RA Results</h1><p>Every RA, including those with no evaluations yet</p></div>
+        <div class="frow">
+          <label>Association:</label>
+          <select id="f-assoc" onchange="renderAdmRAs()"><option value="">All</option></select>
+          <label>SR:</label>
+          <select id="f-sr" onchange="renderAdmRAs()"><option value="">All Senior Residents</option></select>
+        </div>
+        <div class="card"><div id="adm-ra-tbl"></div></div>
+      </div>
+
+      <div class="sec" id="s-detail">
+        <button class="back-btn" id="detail-back">← Back</button>
+        <div class="ph"><h1 id="d-name"></h1><p id="d-meta"></p></div>
+        <div class="stats" id="d-stats"></div>
+        <div class="card"><div class="card-t">Score Breakdown</div><div id="d-q5"></div></div>
+        <div class="card"><div class="card-t">Comments &amp; Responses</div><div id="d-comments"></div></div>
+      </div>
+
+      <div class="sec" id="s-sr-upeval">
+        <div class="ph"><h1>My Up Evaluation Results</h1></div>
+        <div class="stats" id="sr-up-stats"></div>
+        <div class="card"><div class="card-t">Score Breakdown</div><div id="sr-up-q5"></div><div id="sr-up-open"></div></div>
+      </div>
+
+      <div class="sec" id="s-rlc-analytics">
+        <div class="ph"><h1>Analytics</h1></div>
+        <div class="stats" id="rlc-analytics-stats"></div>
+        <div class="two">
+          <div class="card"><div class="card-t">RA Overall Scores</div><div style="height:260px;position:relative"><canvas id="c-rlc-ra"></canvas></div></div>
+          <div class="card"><div class="card-t">Score by Association</div><div style="height:260px;position:relative"><canvas id="c-rlc-assoc"></canvas></div></div>
+        </div>
+        <div class="card"><div class="card-t">Category Averages</div><div style="height:240px;position:relative"><canvas id="c-rlc-cat"></canvas></div></div>
+      </div>
+      <div class="sec" id="s-rlc-srs">
+        <div class="ph"><h1>My Senior Residents</h1></div>
+        <div class="stats" id="rlc-sr-stats"></div>
+        <div id="rlc-sr-list"></div>
+      </div>
+      <div class="sec" id="s-rlc-assocs">
+        <div class="ph"><h1>My Associations</h1></div>
+        <div id="rlc-assoc-list"></div>
+      </div>
+      <div class="sec" id="s-rlc-upeval">
+        <div class="ph"><h1>My Up Evaluation Results</h1></div>
+        <div class="stats" id="rlc-up-stats"></div>
+        <div class="card"><div class="card-t">Score Breakdown</div><div id="rlc-up-q5"></div><div id="rlc-up-open"></div></div>
+      </div>
+      <div class="sec" id="s-ps-upeval">
+        <div class="ph"><h1>My Up Evaluation Results</h1></div>
+        <div class="stats" id="ps-up-stats"></div>
+        <div class="card"><div class="card-t">Score Breakdown</div><div id="ps-up-q5"></div><div id="ps-up-open"></div></div>
+      </div>
+      <div class="sec" id="s-rllt-upeval">
+        <div class="ph"><h1>My Up Eval Submission</h1><p>What you submitted, for your own reference</p></div>
+        <div id="rllt-up-content"></div>
+      </div>
+      <div class="sec" id="s-adm-sr-upevals">
+        <div class="ph"><h1>SR Up Evaluations</h1></div>
+        <div class="card"><div id="adm-sr-up-tbl"></div></div>
+        <div id="adm-sr-up-concerns"></div>
+      </div>
+      <div class="sec" id="s-adm-rlc-upevals">
+        <div class="ph"><h1>RLC Up Evaluations</h1></div>
+        <div class="card"><div id="adm-rlc-up-tbl"></div></div>
+      </div>
+      <div class="sec" id="s-adm-sr-downevals">
+        <div class="ph"><h1>SR Down Evaluations</h1><p>Each SR's evaluations of their RAs</p></div>
+        <div class="card"><div id="adm-sr-down-tbl"></div></div>
+      </div>
+      <div class="sec" id="s-adm-rlc-downevals">
+        <div class="ph"><h1>RLC Down Evaluations</h1><p>Each RLC's evaluations of their SRs</p></div>
+        <div class="card"><div id="adm-rlc-down-tbl"></div></div>
+      </div>
+      <div class="sec" id="s-adm-ps-downevals">
+        <div class="ph"><h1>Pro-Staff Down Evaluations</h1><p>Each Pro-Staff member's evaluations of their RLLTs</p></div>
+        <div class="card"><div id="adm-ps-down-tbl"></div></div>
+      </div>
+      <div class="sec" id="s-adm-rllt-upevals">
+        <div class="ph"><h1>RLLT Up Evaluations</h1></div>
+        <div class="card"><div id="adm-rllt-up-tbl"></div></div>
+      </div>
+      <div class="sec" id="s-up-detail">
+        <button class="back-btn" id="up-detail-back">← Back</button>
+        <div class="ph"><h1 id="ud-name"></h1></div>
+        <div class="stats" id="ud-stats"></div>
+        <div class="card"><div class="card-t">Score Breakdown</div><div id="ud-q5"></div><div id="ud-open"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+function showLoading(msg) {
+  const el = document.getElementById('loading-msg');
+  if (el) el.textContent = msg;
+  const state = document.getElementById('loading-state');
+  if (state) state.style.display = 'flex';
+}
+function hideLoading() {
+  const state = document.getElementById('loading-state');
+  if (state) state.style.display = 'none';
+}
+function showLoginError(msg) {
+  const el = document.getElementById('login-error');
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+/* ── PIN LOGIN ──────────────────────────────────
+   Single 6-digit PIN, unique per person, checked server-side. */
+async function pinLogin() {
+  showLoginError('');
+  const pin = document.getElementById('login-pin').value.trim();
+  if (!/^\d{6}$/.test(pin)) {
+    return showLoginError('Enter your 6-digit PIN.');
+  }
+  showLoading('Checking your PIN…');
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    const body = await res.json();
+    hideLoading();
+    if (!res.ok) return showLoginError(body.error || 'Incorrect PIN.');
+    await loadMyData();
+  } catch (e) {
+    hideLoading();
+    showLoginError('Network error. Try again.');
+  }
+}
+
+async function loadMyData() {
+  showLoading('Loading your dashboard…');
+  try {
+    const res = await fetch('/api/my-data');
+    if (res.status === 401) {
+      hideLoading();
+      return;
+    }
+    if (res.status === 403) {
+      hideLoading();
+      const body = await res.json();
+      showLoginError(body.message || 'No staff record found for this account.');
+      return;
+    }
+    if (!res.ok) {
+      hideLoading();
+      showLoginError('Something went wrong loading your dashboard. Try reloading.');
+      return;
+    }
+    const payload = await res.json();
+    const role = payload.role.toLowerCase().replace(/[\s_-]/g, '');
+    const roleObj = role === 'ra'
+      ? { type: 'ra', data: (payload.data.full_roster || []).find(r => r.name === payload.name) || { name: payload.name } }
+      : { type: role, name: payload.name };
+    bootApp(payload.name, payload.email, roleObj, payload.data, 'live');
+  } catch (e) {
+    hideLoading();
+    showLoginError('Network error. Try reloading.');
+  }
+}
+
+loadMyData();
+
+let D = null;
+let USER = null;
+let lastFetch = null;
+let dataMode = 'snapshot';
+let currentNavId = null;
+
+function bootApp(name, email, role, data, mode) {
+  D = data;
+  USER = { name, email, role };
+  dataMode = mode;
+  lastFetch = new Date();
+
+  document.getElementById('splash').classList.add('gone');
+  document.getElementById('app').classList.add('on');
+  document.getElementById('h-name').textContent = name;
+  const _rl={ra:'RA',sr:'SR',rlc:'RLC',pc:'PC',rllt:'RLLT',admin:'Admin'}; document.getElementById('h-role').textContent = _rl[role.type]||role.type;
+
+  const updEl = document.getElementById('h-updated');
+  if (updEl) {
+    let ts = lastFetch;
+    if (D && D.generated_at) {
+      const parsed = new Date(D.generated_at);
+      if (!isNaN(parsed.getTime())) ts = parsed;
+    }
+    updEl.textContent = 'Data as of ' + ts.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+
+  buildNav();
+  initView();
+}
+
+async function doLogout() {
+  try { await fetch('/api/logout', { method: 'POST' }); } catch (e) {}
+  USER = null; D = null;
+  document.getElementById('splash').classList.remove('gone');
+  document.getElementById('app').classList.remove('on');
+  document.getElementById('login-pin').value = '';
+  showLoginError('');
+  Object.values(_ch).forEach(c => c.destroy());
+}
+
+function buildNav() {
+  const t = USER.role.type;
+  let h = '';
+  if (t === 'ra') {
+    h += ns('My Dashboard') + nl('ra-results','My Results');
+    h += ns('Up Evaluations') + nl('ra-upeval','Submit My Up Evaluation');
+    h += ns('Down Evaluations') + nl('my-down','My Down Evaluation');
+  } else if (t === 'sr') {
+    h += ns('SR Dashboard') + nl('sr-assoc','Association') + nl('sr-ras','My RAs');
+    h += ns('Up Evaluations') + nl('sr-upeval','My Up Evals') + nl('ra-upeval','Submit My Up Evaluation');
+    h += ns('Down Evaluations') + nl('my-down','My Down Evaluation') + nl('sr-downeval','Submit My Down Evaluations');
+  } else if (t === 'rlc') {
+    h += ns('RLC Dashboard') + nl('rlc-analytics','Analytics') + nl('rlc-srs','My Senior Residents') + nl('rlc-assocs','Associations');
+    h += ns('Up Evaluations') + nl('rlc-upeval','My Up Evals');
+    h += ns('Down Evaluations') + nl('sr-downeval','Submit My Down Evaluations');
+  } else if (t === 'pc') {
+    h += ns('Up Evaluations') + nl('ps-upeval','My Up Evals');
+    h += ns('Down Evaluations') + nl('sr-downeval','Submit My Down Evaluations');
+  } else if (t === 'rllt') {
+    h += ns('Up Evaluations') + nl('rllt-upeval','My Up Eval Submission') + nl('ra-upeval','Submit My Up Evaluation');
+    h += ns('Down Evaluations') + nl('my-down','My Down Evaluation');
+  } else {
+    h += ns('Admin') + nl('adm-analytics','Analytics') + nl('adm-assocs','Associations') + nl('adm-ras','All RAs');
+    h += nl('adm-sr-upevals','SR Up Evals') + nl('adm-rlc-upevals','RLC Up Evals') + nl('adm-rllt-upevals','RLLT Up Evals');
+    h += nl('adm-sr-downevals','SR Down Evals') + nl('adm-rlc-downevals','RLC Down Evals') + nl('adm-ps-downevals','Pro-Staff Down Evals');
+    // An Admin who also supervises someone (e.g. an RLC-level or Pro-Staff-level admin) gets their own down evals too.
+    if (typeof D !== 'undefined' && D && D.my_down_evals && D.my_down_evals.length) {
+      h += ns('Down Evaluations') + nl('sr-downeval','Submit My Down Evaluations');
+    }
+  }
+  document.getElementById('nav').innerHTML = h;
+}
+const ns = t => `<div class="n-sec">${t}</div>`;
+const nl = (id,lbl) => `<div class="n-link" data-sec="${id}" onclick="nav('${id}')">${lbl}</div>`;
+
+function nav(id) {
+  currentNavId = id;
+  document.querySelectorAll('.sec').forEach(function(s){ s.classList.remove('on'); });
+  document.querySelectorAll('.n-link').forEach(function(l){ l.classList.remove('on'); });
+  var el = document.getElementById('s-'+id);
+  if (el) el.classList.add('on');
+  document.querySelectorAll('.n-link[data-sec="'+id+'"]').forEach(function(l){ l.classList.add('on'); });
+  var lazy = {
+    'adm-analytics':     function(){ renderAdmAnalytics(); },
+    'adm-assocs':        function(){ populateAdmFilters(); renderAdmAssocs(); },
+    'adm-ras':           function(){ populateAdmFilters(); renderAdmRAs(); },
+    'ra-upeval':         function(){ renderRAUpEvalLink(); },
+    'my-down':           function(){ renderMyDownReceived(); },
+    'sr-downeval':       function(){ renderSRDownEvalLink(); },
+    'sr-assoc':          function(){ renderSRAssoc(); },
+    'sr-ras':            function(){ renderSRRAs(); },
+    'sr-upeval':         function(){ renderSRUpEval(); },
+    'rlc-analytics':     function(){ renderRLCAnalytics(); },
+    'rlc-srs':           function(){ renderRLCSRs(); },
+    'rlc-assocs':        function(){ renderRLCAssocs(); },
+    'rlc-upeval':        function(){ renderRLCUpEval(); },
+    'ps-upeval':         function(){ renderPSUpEval(); },
+    'rllt-upeval':       function(){ renderRLLTUpEval(); },
+    'adm-sr-upevals':    function(){ renderAdmSRUpEvals(); },
+    'adm-rlc-upevals':   function(){ renderAdmRLCUpEvals(); },
+    'adm-rllt-upevals':  function(){ renderAdmRLLTUpEvals(); },
+    'adm-sr-downevals':  function(){ renderAdmDown('sr_ra'); },
+    'adm-rlc-downevals': function(){ renderAdmDown('rlc_sr'); },
+    'adm-ps-downevals':  function(){ renderAdmDown('ps_rllt'); }
+  };
+  if (lazy[id]) lazy[id]();
+}
+
+function initView() {
+  const t = USER.role.type;
+  if (t === 'ra')            { renderRA();         nav('ra-results'); }
+  else if (t === 'sr')       { renderSRAssoc();    nav('sr-assoc'); }
+  else if (t === 'rlc')      { renderRLCSRs();     nav('rlc-srs'); }
+  else if (t === 'pc') { renderPSUpEval(); nav('ps-upeval'); }
+  else if (t === 'rllt')     { renderRLLTUpEval(); nav('rllt-upeval'); }
+  else                       { renderAdmView();    nav('adm-analytics'); }
+}
+
+Chart.defaults.color='#c8d0e0';
+Chart.defaults.borderColor='#1e2740';
+Chart.defaults.font.family='Inter';
+const _ch={};
+function mkChart(id,cfg){
+  if(_ch[id])_ch[id].destroy();
+  const el=document.getElementById(id);
+  if(!el)return;
+  _ch[id]=new Chart(el,cfg);
+}
+const GRID={color:'rgba(255,255,255,0.06)',drawBorder:false};
+const TICK={color:'#a0aac4',font:{size:10}};
+
+let currentTheme = 'dark';
+function getStoredTheme(){
+  try { return localStorage.getItem('uva_evals_theme'); } catch(e){ return null; }
+}
+function persistTheme(theme){
+  try { localStorage.setItem('uva_evals_theme', theme); } catch(e){}
+}
+function applyTheme(theme){
+  currentTheme = theme;
+  if (theme === 'light') document.documentElement.setAttribute('data-theme','light');
+  else document.documentElement.removeAttribute('data-theme');
+
+  const light = theme === 'light';
+  GRID.color = light ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)';
+  TICK.color = light ? '#5a6480' : '#a0aac4';
+  Chart.defaults.color = light ? '#3a4258' : '#c8d0e0';
+  Chart.defaults.borderColor = light ? '#dde3ee' : '#1e2740';
+
+  const appEl = document.getElementById('app');
+  if (appEl && appEl.classList.contains('on') && currentNavId) nav(currentNavId);
+}
+function toggleTheme(){
+  const next = currentTheme === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  persistTheme(next);
+}
+applyTheme(getStoredTheme() || 'dark');
+
+function chip(v){
+  if(v===null||v===undefined)return'<span class="chip cn">N/A</span>';
+  const c=v>=3?'ch':v>=2?'cm':'cl';
+  return`<span class="chip ${c}">${v.toFixed(2)}</span>`;
+}
+// ── Response-rate thresholds (RA Guide 2026-27, Fall) ──
+// Reward = meet or exceed; Failure = fall below. Same numbers apply to an
+// individual RA's hall and to the association as a whole.
+const THRESH={
+  'First-Year':{reward:70,fail:20},
+  'Upperclass':{reward:50,fail:15},
+  'Residential College':{reward:50,fail:15}
+};
+function threshStatus(rate,ht){
+  const t=THRESH[ht];
+  if(rate===null||rate===undefined||!t)return{key:'na',cls:'cn',label:'No rate yet',color:'var(--muted)',t:t||null};
+  if(rate>=t.reward)return{key:'reward',cls:'ch',label:'Reward threshold met',color:'var(--green)',t};
+  if(rate<t.fail)return{key:'fail',cls:'cl',label:'Below failure threshold',color:'var(--red)',t};
+  return{key:'mid',cls:'cm',label:'Between thresholds',color:'var(--yellow)',t};
+}
+function rateChip(rate,ht){
+  if(rate===null||rate===undefined)return'<span class="chip cn">N/A</span>';
+  const s=threshStatus(rate,ht);
+  return`<span class="chip ${s.cls}" title="${s.label}">${Math.round(rate)}% resp.</span>`;
+}
+// Roll up one association: responses vs. expected residents, plus how many
+// more responses it takes to clear each line.
+const ASSOC_ALIAS={'IRC':'INTERNATIONALRESIDENTIALCOLLEGEIRC','INTERNATIONALRESIDENTIALCOLLEGE':'INTERNATIONALRESIDENTIALCOLLEGEIRC','JMW':'JOHNSONMALONEWEEDON'};
+function akey(a){const k=String(a||'').toUpperCase().replace(/[^A-Z0-9]/g,'');return ASSOC_ALIAS[k]||k;}
+function assocRAs(assoc){const k=akey(assoc);const out=[];const seen={};
+  (D.full_roster||[]).forEach(r=>{if(akey(r.association)===k){out.push(r);seen[r.name]=1;}});
+  Object.entries(D.ra_data||{}).forEach(([n,e])=>{if(!seen[n]&&akey(e.association)===k){out.push({name:n,association:e.association,sr_name:e.sr_name,housing_type:e.housing_type,expected:0});}});
+  return out;}
+function realConcern(x){const t=String(x||'').trim().toLowerCase().replace(/[^a-z]/g,'');return t&&!['na','none','no','nil','false','null','n','nothing','nonetoreport','noconcerns'].includes(t);}
+function assocTracking(assoc){
+  const meta=(D.assoc_meta||{})[assoc]||{};
+  const ras=assocRAs(assoc);
+  const resp=ras.reduce((s,r)=>s+((D.ra_data[r.name]||{}).responses||0),0);
+  const allHaveExp=ras.length>0&&ras.every(r=>r.expected);
+  const expected=allHaveExp?ras.reduce((s,r)=>s+r.expected,0):(meta.total_residents||0);
+  const housing=meta.housing_type||(ras[0]&&ras[0].housing_type)||'';
+  const rate=expected?resp/expected*100:null;
+  const st=threshStatus(rate,housing);
+  const need=p=>Math.max(0,Math.ceil(p*expected/100-1e-9)-resp);
+  return{assoc,housing,ras,resp,expected,rate,st,
+    toFail:st.t&&expected?need(st.t.fail):0,
+    toReward:st.t&&expected?need(st.t.reward):0};
+}
+// Progress bar with a tick at the failure line and one at the reward line.
+function thresholdTracker(tr){
+  if(!tr.st.t||tr.rate===null)return'<p style="color:var(--muted);font-size:.83rem">No threshold data for this association yet (missing housing type or resident counts).</p>';
+  const t=tr.st.t,pct=Math.min(100,tr.rate);
+  const tick=(p,lbl)=>`<div style="position:absolute;left:${p}%;top:-4px;bottom:-4px;border-left:2px solid var(--text);opacity:.55"></div><div style="position:absolute;left:${p}%;top:20px;transform:translateX(-50%);font-size:.66rem;color:var(--muted);white-space:nowrap">${lbl} ${p}%</div>`;
+  let msg;
+  if(tr.st.key==='reward')msg=`Reward threshold met (${tr.resp} of ${tr.expected} residents).`;
+  else if(tr.st.key==='mid')msg=`Clear of the failure line. <b>${tr.toReward}</b> more response${tr.toReward===1?'':'s'} to reach the ${t.reward}% reward threshold.`;
+  else msg=`<b>${tr.toFail}</b> more response${tr.toFail===1?'':'s'} to get out of failure territory (${t.fail}%), <b>${tr.toReward}</b> to reach the ${t.reward}% reward threshold.`;
+  return`<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px"><span style="font-size:1.6rem;font-weight:900;color:${tr.st.color}">${tr.rate.toFixed(1)}%</span><span class="chip ${tr.st.cls}">${tr.st.label}</span></div>
+    <div style="position:relative;height:9px;background:var(--surf2);border-radius:5px;margin-bottom:30px"><div style="height:100%;width:${pct}%;background:${tr.st.color};border-radius:5px;transition:width .5s"></div>${tick(t.fail,'Failure')}${tick(t.reward,'Reward')}</div>
+    <div style="font-size:.8rem;color:var(--muted)">${tr.resp} responses · ${tr.expected} expected residents · ${tr.housing}</div>
+    <div style="font-size:.82rem;margin-top:6px">${msg}</div>`;
+}
+function fmtName(n){
+  if(!n)return'—';
+  const parts=n.split(',');
+  if(parts.length<2)return n.trim();
+  return parts[1].trim()+' '+parts[0].trim();
+}
+function scoreBars(questions){
+  if(!questions||!questions.length)return'<p style="color:var(--muted);font-size:.83rem">No data.</p>';
+  return questions.map(q=>{
+    const v=q.score,pct=v!==null?(v/4*100):0,fc=v===null?'lo':v>=3?'hi':v>=2?'md':'lo';
+    const vc=v===null?'var(--muted)':v>=3?'var(--green)':v>=2?'var(--yellow)':'var(--red)';
+    return`<div class="sb"><div class="sb-row"><span class="sb-lbl">${q.text}</span><span class="sb-val" style="color:${vc}">${v!==null?v.toFixed(2)+' / 4':'N/A'}</span></div><div class="track"><div class="fill ${fc}" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+}
+function label3(v){
+  if(v===null||v===undefined)return'N/A';
+  const r=Math.round(v);
+  return r<=1?'Needs Improvement':r===2?'Meets Expectations':'Exceeds Expectations';
+}
+function chip3(v){
+  if(v===null||v===undefined)return'<span class="chip cn">N/A</span>';
+  const c=v>=2.5?'ch':v>=1.5?'cm':'cl';
+  return`<span class="chip ${c}">${label3(v)}</span>`;
+}
+function scoreBars3(questions){
+  if(!questions||!questions.length)return'<p style="color:var(--muted);font-size:.83rem">No data.</p>';
+  return questions.map(q=>{
+    const v=q.score,pct=v!==null?(v/3*100):0,fc=v===null?'lo':v>=2.5?'hi':v>=1.5?'md':'lo';
+    const vc=v===null?'var(--muted)':v>=2.5?'var(--green)':v>=1.5?'var(--yellow)':'var(--red)';
+    return`<div class="sb"><div class="sb-row"><span class="sb-lbl">${q.text}</span><span class="sb-val" style="color:${vc}">${v!==null?label3(v)+' ('+v.toFixed(2)+'/3)':'N/A'}</span></div><div class="track"><div class="fill ${fc}" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+}
+function upStatCards3(ev){
+  const c=ev.avg===null?'var(--muted)':ev.avg>=2.5?'var(--green)':ev.avg>=1.5?'var(--yellow)':'var(--red)';
+  return '<div class="sc"><div class="sc-lbl">Overall Rating</div><div class="sc-val" style="font-size:1.25rem;color:'+c+'">'+(ev.avg!==null?label3(ev.avg):'—')+'</div><div class="sc-sub">'+(ev.avg!==null?ev.avg.toFixed(2)+' / 3.00':'')+'</div></div><div class="sc"><div class="sc-lbl">Responses</div><div class="sc-val" style="color:var(--text)">'+ev.responses+'</div><div class="sc-sub">submitted</div></div>';
+}
+function submissionAccordions3(subs,groups){
+  if(!subs||!subs.length)return'<p style="color:var(--muted);font-size:.83rem">No submissions yet.</p>';
+  return subs.map(s=>{
+    const qs=s.questions||[];
+    let qi=0,body='';
+    (groups||[]).forEach(g=>{
+      const slice=qs.slice(qi,qi+g.count);
+      qi+=g.count;
+      if(slice.length) body+=scoreBars3(slice);
+      if(s.open&&s.open[g.key]) body+='<div style="margin:2px 0 16px"><div class="card-t" style="font-size:.8rem;text-transform:none;letter-spacing:0;line-height:1.45;font-weight:600">'+g.label+'</div><ul class="rlist"><li>'+s.open[g.key]+'</li></ul></div>';
+    });
+    if(qi<qs.length) body+=scoreBars3(qs.slice(qi));
+    return '<div class="acc"><div class="acc-h" onclick="toggleAcc(this)"><span style="font-weight:600">'+fmtName(s.name)+'</span><span style="display:flex;align-items:center;gap:9px"><span class="chv">▼</span></span></div><div class="acc-b">'+body+'</div></div>';
+  }).join('');
+}
+function respList(arr){
+  if(!arr||!arr.length)return'<p style="color:var(--muted);font-size:.83rem">No responses submitted.</p>';
+  return '<ul class="rlist">' + arr.map(x=>'<li>'+x+'</li>').join('') + '</ul>';
+}
+function statCards(ev,name){
+  const ra=D.full_roster.find(r=>r.name===name);
+  const exp=ra?.expected;
+  const ratePct=exp?Math.round((ev.responses/exp)*100):null;
+  const rateStr=ratePct!==null?ratePct+'%':'—';
+  const _ht=(ra&&ra.housing_type)||((D.assoc_meta||{})[ra&&ra.association]||{}).housing_type;
+  const rateCol=threshStatus(ratePct,_ht).color;
+  return`<div class="sc"><div class="sc-lbl">Overall Average</div><div class="sc-val" style="color:${ev.avg===null?'var(--muted)':ev.avg>=3?'var(--green)':ev.avg>=2?'var(--yellow)':'var(--red)'}">${ev.avg!==null?ev.avg.toFixed(2):'—'}</div><div class="sc-sub">out of 4.00</div></div>
+    <div class="sc"><div class="sc-lbl">Responses</div><div class="sc-val" style="color:var(--text)">${ev.responses}</div><div class="sc-sub">submitted</div></div>
+    <div class="sc"><div class="sc-lbl">Response Rate</div><div class="sc-val" style="font-size:1.5rem;color:${rateCol}">${rateStr}</div></div>`;
+}
+function mergedQuestions(evList){
+  if(!evList.length)return[];
+  return evList[0].questions.map((q,i)=>{
+    const vals=evList.map(ev=>ev.questions[i]?.score).filter(v=>v!==null&&v!==undefined);
+    return{text:q.text,score:vals.length?+(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2):null};
+  });
+}
+function overallAvg(evList){
+  const vals=evList.flatMap(ev=>ev.questions.map(q=>q.score).filter(v=>v!==null));
+  return vals.length?+(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2):null;
+}
+function distCounts(evList){
+  let poor=0,fair=0,good=0,exc=0,tot=0;
+  evList.forEach(ev=>ev.questions.forEach(q=>{
+    const v=q.score;if(v===null)return;tot++;
+    if(v<2)poor++;else if(v<=3)fair++;else exc++;
+  }));
+  const p=n=>tot?Math.round(n/tot*100):0;
+  return{poor:p(poor),fair:p(fair),good:p(good),exc:p(exc)};
+}
+function barChart(id,labels,data,color='#00d67a',horiz=false,fullLabels=null){
+  mkChart(id,{type:'bar',data:{labels,datasets:[{data,backgroundColor:color,borderRadius:4,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,...(horiz?{indexAxis:'y'}:{}),plugins:{legend:{display:false},tooltip:{callbacks:{
+    title:ctx=>fullLabels ? (fullLabels[ctx[0].dataIndex] || ctx[0].label) : ctx[0].label,
+    label:ctx=>' '+(horiz?ctx.parsed.x:ctx.parsed.y).toFixed(2)
+  }}},scales:{x:{grid:GRID,ticks:{...TICK,maxRotation:horiz?0:45},...(horiz?{min:0,max:4}:{})},y:{grid:GRID,ticks:TICK,...(horiz?{}:{min:0,max:4})}}}});
+}
+function wrapLabel(t,w,maxLines){
+  var words=String(t).split(' '),lines=[],cur='';
+  words.forEach(function(x){if((cur+' '+x).trim().length>w&&cur){lines.push(cur);cur=x;}else cur=(cur+' '+x).trim();});
+  if(cur)lines.push(cur);
+  if(lines.length>maxLines){lines=lines.slice(0,maxLines);lines[maxLines-1]=lines[maxLines-1].replace(/[ ,.;:]+$/,'')+'\u2026';}
+  return lines;
+}
+// One cluster of three bars (First-Year / Upperclass / Residential College) per question.
+function groupedCategoryChart(id,allEv){
+  var groups=[{ht:'First-Year',color:'#3d7fff'},{ht:'Upperclass',color:'#a78bfa'},{ht:'Residential College',color:'#2dd4bf'}];
+  var htOf=function(ev){return ev.housing_type||((D.assoc_meta||{})[ev.association]||{}).housing_type||'';};
+  var base=mergedQuestions(allEv);
+  var full=base.map(function(q){return q.text;});
+  var datasets=groups.map(function(g){
+    var evs=allEv.filter(function(ev){return htOf(ev)===g.ht&&ev.questions&&ev.questions.length;});
+    var m=evs.length?mergedQuestions(evs):[];
+    return{label:g.ht+(evs.length?'':' (no data)'),data:full.map(function(_,i){return m[i]?m[i].score:null;}),backgroundColor:g.color,borderRadius:4,borderSkipped:false,maxBarThickness:26};
+  });
+  mkChart(id,{type:'bar',data:{labels:full.map(function(t){return wrapLabel(t,18,4);}),datasets:datasets},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:true,position:'top',labels:{color:'#c8d0e0',boxWidth:12,boxHeight:12,font:{size:11}}},
+        tooltip:{callbacks:{title:function(c){return full[c[0].dataIndex];},label:function(c){return ' '+c.dataset.label+': '+(c.parsed.y===null?'N/A':c.parsed.y.toFixed(2));}}}},
+      scales:{x:{grid:GRID,ticks:{color:'#a0aac4',font:{size:10},maxRotation:0,autoSkip:false}},y:{grid:GRID,ticks:TICK,min:0,max:4}}}});
+}
+// Histogram of RA overall scores in 0.1 steps (everything under 2.0 is one bucket).
+function scoreHistogram(id,scores,subId){
+  var vals=scores.filter(function(v){return v!==null&&v!==undefined&&!isNaN(v);});
+  var labels=['<2.0'],ranges=['Below 2.0'],counts=[0];
+  for(var i=20;i<40;i++){labels.push((i/10).toFixed(1));ranges.push((i/10).toFixed(1)+' \u2013 '+((i+1)/10).toFixed(1));counts.push(0);}
+  vals.forEach(function(v){
+    if(v<2){counts[0]++;return;}
+    var idx=Math.min(39,Math.floor(Math.round(v*1000)/100)); // 0.1 bucket, 4.0 joins 3.9-4.0
+    counts[idx-19]++;
+  });
+  var colors=labels.map(function(l,i){var lo=i===0?1.5:(19+i)/10;return lo<2?'#ff4d4d':lo<3?'#ffc700':'#00d67a';});
+  var sorted=vals.slice().sort(function(a,b){return a-b;});
+  var med=sorted.length?(sorted.length%2?sorted[(sorted.length-1)/2]:(sorted[sorted.length/2-1]+sorted[sorted.length/2])/2):null;
+  var el=subId&&document.getElementById(subId);
+  if(el)el.textContent=vals.length+' RAs with scores'+(med!==null?' \u00b7 median '+med.toFixed(2):'');
+  mkChart(id,{type:'bar',data:{labels:labels,datasets:[{data:counts,backgroundColor:colors,borderRadius:3,borderSkipped:false}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:function(c){return 'Score '+ranges[c[0].dataIndex];},label:function(c){return ' '+c.parsed.y+' RA'+(c.parsed.y===1?'':'s');}}}},
+      scales:{x:{grid:{display:false},ticks:{color:'#a0aac4',font:{size:9},maxRotation:90,minRotation:90,autoSkip:false},title:{display:true,text:'RA overall score',color:'#a0aac4',font:{size:10}}},
+              y:{grid:GRID,ticks:{color:'#a0aac4',font:{size:10},precision:0},beginAtZero:true,title:{display:true,text:'Number of RAs',color:'#a0aac4',font:{size:10}}}}}});
+}
+function donut(id,dist){
+  mkChart(id,{type:'doughnut',data:{labels:['Below 2','2–3 Range','Above 3'],datasets:[{data:[dist.poor,dist.fair,dist.exc],backgroundColor:['#ff4d4d','#ffc700','#00d67a'],borderColor:'#0b0f19',borderWidth:3,hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>` ${ctx.label}: ${ctx.parsed}%`}}}}});
+}
+function legend(id,dist){
+  var items = [
+    ['#ff4d4d','Below 2.0'],
+    ['#ffc700','2.0–3.0 Range'],
+    ['#00d67a','Above 3.0']
+  ];
+  document.getElementById(id).innerHTML = items.map(function(x){
+    return '<div class="leg"><div class="ldot" style="background:'+x[0]+'"></div>'+x[1]+'</div>';
+  }).join('');
+}
+
+function renderRA(){
+  const name=USER.role.data?.ra_name||USER.name;
+  const raName=USER.role.data?.name||USER.name;
+  const ev=D.ra_data[raName];
+  const ra=(D.full_roster||[]).find(r=>r.name===raName);
+  document.getElementById('ra-meta').textContent=ra?`${ra.association} · SR: ${ra.sr_name}`:'No roster entry found';
+  if(!ev){
+    document.getElementById('ra-stats').innerHTML='<div class="sc"><div class="sc-lbl">Status</div><div class="sc-val" style="font-size:1rem;color:var(--muted)">No evals yet</div></div>';
+    ['ra-q5','ra-q6','ra-q8','ra-q9'].forEach(id=>document.getElementById(id).innerHTML='<p style="color:var(--muted);font-size:.83rem">Nothing to show yet.</p>');
+    return;
+  }
+  document.getElementById('ra-stats').innerHTML=statCards(ev,raName);
+  document.getElementById('ra-q5').innerHTML=scoreBars(ev.questions);
+  document.getElementById('ra-q6').innerHTML=respList(ev.q6);
+  document.getElementById('ra-q8').innerHTML=respList(ev.q8);
+  document.getElementById('ra-q9').innerHTML=respList(ev.q9);
+}
+
+function renderSRRAs(){
+  const srName=USER.role.name||USER.name;
+  const assocs=D.sr_assocs[srName]||[];
+  const myRAs=D.full_roster||[];
+  const evRAs=myRAs.filter(r=>D.ra_data[r.name]);
+  const allEv=evRAs.map(r=>D.ra_data[r.name]);
+  document.getElementById('sr-ra-sub').textContent=`${myRAs.length} RAs · ${assocs.join(', ')}`;
+  const overall=overallAvg(allEv);
+  document.getElementById('sr-ra-stats').innerHTML=`<div class="sc"><div class="sc-lbl">Association Average</div><div class="sc-val" style="color:${overall===null?'var(--muted)':overall>=3?'var(--green)':overall>=2?'var(--yellow)':'var(--red)'}">${overall?overall.toFixed(2):'—'}</div><div class="sc-sub">out of 4.00</div></div><div class="sc"><div class="sc-lbl">Total Responses</div><div class="sc-val" style="color:var(--text)">${allEv.reduce((s,e)=>s+e.responses,0)}</div><div class="sc-sub">across ${evRAs.length} RAs</div></div>`;
+  const container=document.getElementById('sr-ra-list');
+  if(!myRAs.length){container.innerHTML='<div class="empty">No RAs found.</div>';return;}
+  container.innerHTML=myRAs.map(ra=>{
+    const ev=D.ra_data[ra.name];
+    const safe=ra.name.replace(/'/g,"\\'");
+    const _evHtml = ev
+      ? '<div class="stats" style="margin-bottom:14px">' + statCards(ev,ra.name) + '</div>' + scoreBars(ev.questions) + '<div style="margin-top:16px"><div class="card-t">What has your RA done to make you feel connected to your residential community this semester?</div>' + respList(ev.q6) + '<div class="card-t" style="margin-top:12px">Share a moment or a story where your RA made a positive impact on you.</div>' + respList(ev.q8) + '<div class="card-t" style="margin-top:12px">How else could your RA better serve you?</div>' + respList(ev.q9) + '</div>'
+      : '<p style="color:var(--muted);font-size:.83rem">No evals yet.</p>';
+    const _avgChip = ev ? chip(ev.avg) : '<span class="chip cn">No Data</span>';
+    const _rate = (ev && ra.expected) ? (ev.responses/ra.expected*100) : null;
+    const _respChip = ev ? rateChip(_rate, ra.housing_type) : '';
+    return '<div class="acc"><div class="acc-h" onclick="toggleAcc(this)"><span>' + fmtName(ra.name) + '</span><span style="display:flex;align-items:center;gap:9px">' + _respChip + _avgChip + '<span class="chv">▼</span></span></div><div class="acc-b">' + _evHtml + '</div></div>';
+  }).join('');
+}
+
+function renderSRAssoc(){
+  const srName=USER.role.name||USER.name;
+  const assocs=D.sr_assocs[srName]||[];
+  const myRAs=D.full_roster||[];
+  const evRAs=myRAs.filter(r=>D.ra_data[r.name]);
+  const allEv=evRAs.map(r=>D.ra_data[r.name]);
+  document.getElementById('sr-assoc-title').textContent=assocs.join(' / ');
+  const overall=overallAvg(allEv);
+  document.getElementById('sr-assoc-stats').innerHTML=`<div class="sc"><div class="sc-lbl">Overall Average</div><div class="sc-val" style="color:${overall===null?'var(--muted)':overall>=3?'var(--green)':overall>=2?'var(--yellow)':'var(--red)'}">${overall?overall.toFixed(2):'—'}</div><div class="sc-sub">out of 4.00</div></div><div class="sc"><div class="sc-lbl">Total Responses</div><div class="sc-val" style="color:var(--text)">${allEv.reduce((s,e)=>s+e.responses,0)}</div><div class="sc-sub">across ${evRAs.length} RAs</div></div><div class="sc"><div class="sc-lbl">RAs Evaluated</div><div class="sc-val" style="color:var(--text)">${evRAs.length}</div><div class="sc-sub">of ${myRAs.length} total</div></div>`;
+  document.getElementById('sr-assoc-thresh').innerHTML=assocs.length
+    ? assocs.map(a=>{const tr=assocTracking(a);return (assocs.length>1?'<div style="font-weight:700;margin:4px 0 10px">'+a+'</div>':'')+thresholdTracker(tr);}).join('<hr style="border:0;border-top:1px solid var(--border);margin:18px 0">')
+    : '<p style="color:var(--muted);font-size:.83rem">No association found.</p>';
+  const raRows=evRAs.map(r=>({name:fmtName(r.name),avg:D.ra_data[r.name].avg}));
+  barChart('c-sr-ra',raRows.map(r=>r.name),raRows.map(r=>r.avg),'#00d67a');
+  const merged=mergedQuestions(allEv);
+  barChart('c-sr-cat',merged.map(q=>q.text.slice(0,20)+'…'),merged.map(q=>q.score??0),'#3d7fff',false,merged.map(q=>q.text));
+}
+
+function toggleAcc(h){h.classList.toggle('open');h.nextElementSibling.classList.toggle('open');}
+
+function populateAdmFilters(){
+  const ae=document.getElementById("f-assoc"),se=document.getElementById("f-sr");
+  if(!ae||!se)return;
+  const an=[...new Set(allRAList().map(e=>e.association).filter(Boolean))].sort();
+  const sn=[...new Set(allRAList().map(e=>e.sr_name).filter(Boolean))].sort();
+  ae.innerHTML='<option value="">All</option>'+an.map(a=>'<option>'+a+'</option>').join("");
+  se.innerHTML='<option value="">All Senior Residents</option>'+sn.map(s=>'<option>'+s+'</option>').join("");
+}
+function renderAdmView(){
+  const assocNames=[...new Set(Object.values(D.ra_data).map(e=>e.association))].sort();
+  const srNames=[...new Set(Object.values(D.ra_data).map(e=>e.sr_name))].sort();
+  document.getElementById('f-assoc').innerHTML='<option value="">All</option>'+assocNames.map(a=>`<option>${a}</option>`).join('');
+  document.getElementById('f-sr').innerHTML='<option value="">All Senior Residents</option>'+srNames.map(s=>`<option>${s}</option>`).join('');
+  renderAdmAssocs();renderAdmRAs();
+}
+function renderAdmAnalytics(){
+  const allEv=Object.values(D.ra_data);
+  const totalResp=allEv.reduce((s,e)=>s+e.responses,0);
+  const sorted=Object.entries(D.ra_data).map(([n,e])=>({name:n,avg:e.avg})).sort((a,b)=>b.avg-a.avg);
+
+  function htAvg(ht){
+    const evs2=allEv.filter(ev=>{
+      const m=D.assoc_meta[ev.association];
+      return m&&m.housing_type===ht;
+    });
+    return evs2.length?overallAvg(evs2):null;
+  }
+  const fyAvg=htAvg('First-Year');
+  const ucAvg=htAvg('Upperclass');
+  const rcAvg=htAvg('Residential College');
+
+  function scVal(v){
+    if(v===null)return'—';
+    const col=v>=3?'var(--green)':v>=2?'var(--yellow)':'var(--red)';
+    return`<span style="color:${col}">${v.toFixed(2)}</span>`;
+  }
+
+  document.getElementById('adm-stats').innerHTML=`
+    <div class="sc"><div class="sc-lbl">First-Year Average</div><div class="sc-val" style="font-size:1.7rem">${scVal(fyAvg)}</div><div class="sc-sub">out of 4.00</div></div>
+    <div class="sc"><div class="sc-lbl">Upperclass Average</div><div class="sc-val" style="font-size:1.7rem">${scVal(ucAvg)}</div><div class="sc-sub">out of 4.00</div></div>
+    <div class="sc"><div class="sc-lbl">Res College Average</div><div class="sc-val" style="font-size:1.7rem">${scVal(rcAvg)}</div><div class="sc-sub">out of 4.00</div></div>
+    <div class="sc"><div class="sc-lbl">Total Responses</div><div class="sc-val" style="color:var(--text)">${totalResp}</div><div class="sc-sub">across all RAs</div></div>
+  `;
+
+  const assocMap={};allEv.forEach(ev=>{const a=ev.association||'Unknown';(assocMap[a]=assocMap[a]||[]).push(ev);});
+  const assocRows=Object.entries(assocMap).map(([a,evs])=>({a,avg:overallAvg(evs)})).sort((a,b)=>b.avg-a.avg);
+  barChart('c-adm-assoc',assocRows.map(r=>r.a.split('/')[0]),assocRows.map(r=>r.avg),'#00d67a',true);
+  groupedCategoryChart('c-adm-cat',allEv);
+  scoreHistogram('c-adm-dist',allEv.map(function(e){return e.avg;}),'adm-dist-sub');legend('lg-adm-dist',null);
+}
+function sh(l,k){return l+(ASSOC_SORT.key===k?(ASSOC_SORT.dir>0?' ▲':' ▼'):' <span style="opacity:.3">↕</span>');}
+
+var ADM_OPEN_4='If there are concerns about your SR or Staff that you would prefer to share only with the Housing and Residence Life Professional Staff, please provide them here.';
+function toggleXR(id,type,key){
+  var tr=document.getElementById(id);if(!tr)return;
+  var open=tr.style.display!=='none';
+  if(open){tr.style.display='none';}
+  else{var cell=tr.firstElementChild;if(!cell.getAttribute('data-built')){cell.innerHTML=admDetailHtml(type,key);cell.setAttribute('data-built','1');}tr.style.display='table-row';}
+  var b=document.getElementById(id+'-b');if(b)b.textContent=open?'View':'Hide';
+}
+function xrBtn(id,type,key){return '<button class="vbtn" id="'+id+'-b" onclick="toggleXR(\''+id+'\',\''+type+'\',\''+String(key).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">View</button>';}
+function xrRow(id,cols){return '<tr id="'+id+'" style="display:none"><td colspan="'+cols+'" style="background:var(--bg,#0b0e17);padding:18px 20px"></td></tr>';}
+function admDetailHtml(type,key){
+  if(type.indexOf('dn_')===0)return downDetailHtml(type.slice(3),key);
+  if(type==='sr'){var ev=(D.ra_sr_data||{})[key];
+    var labels=Object.assign({},RA_SR_LABELS,{open_4:ADM_OPEN_4});
+    return (ev?'<div class="stats" style="margin-bottom:14px">'+upStatCards(ev)+'</div>'+scoreBars(ev.questions):'<p style="color:var(--muted);font-size:.83rem">No up evals submitted yet.</p>')+upSlots('sr',key,ev,function(d){return submissionAccordions(d,labels);},'Not submitted');}
+  if(type==='rlc'){var e3=(D.sr_rlc_data||{})[key];
+    return (e3?'<div class="stats" style="margin-bottom:14px">'+upStatCards3(e3)+'</div>'+scoreBars3(e3.questions):'<p style="color:var(--muted);font-size:.83rem">No up evals submitted yet.</p>')+upSlots('rlc',key,e3,function(d){return submissionAccordions3(d,SR_RLC_GROUPS);},'Not submitted');}
+  if(type==='ps'){var e4=(D.rllt_ps_data||{})[key];
+    return (e4?'<div class="stats" style="margin-bottom:14px">'+upStatCards3(e4)+'</div>'+scoreBars3(e4.questions):'<p style="color:var(--muted);font-size:.83rem">No up evals submitted yet.</p>')+upSlots('ps',key,e4,function(d){return submissionAccordions3(d,RLLT_PS_GROUPS);},'Not submitted');}
+  if(type==='assoc'){var tr=assocTracking(key);var ras=assocRAs(key);var evs=ras.filter(function(r){return D.ra_data[r.name];}).map(function(r){return D.ra_data[r.name];});
+    var m=(D.assoc_meta||{})[key]||{};var merged=mergedQuestions(evs);
+    var rows=ras.map(function(r){var e=D.ra_data[r.name];var sf=r.name.replace(/'/g,"\\'");return '<tr><td style="font-weight:600">'+fmtName(r.name)+'</td><td>'+(e?e.responses:0)+'</td><td>'+(e?chip(e.avg):'<span class="chip cn">N/A</span>')+'</td><td>'+(e?'<button class="vbtn" onclick="showDetail(\''+sf+'\',\'adm-assocs\')">View</button>':'')+'</td></tr>';}).join('');
+    return '<div style="color:var(--muted);font-size:.8rem;margin-bottom:12px">SR: '+fmtName(m.sr_name||'')+(m.rlc_name?' · RLC: '+fmtName(m.rlc_name):'')+'</div>'+
+      '<div class="card-t" style="margin-bottom:8px">Response Rate &amp; Thresholds</div>'+thresholdTracker(tr)+
+      '<div class="card-t" style="margin:18px 0 8px">Resident Assistants</div><table class="tbl"><thead><tr><th>RA</th><th>Responses</th><th>Average</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" style="color:var(--muted)">No RAs found.</td></tr>')+'</tbody></table>'+
+      '<div class="card-t" style="margin:18px 0 8px">Category Averages (all RAs in association)</div>'+scoreBars(merged);}
+  return '';
+}
+var ASSOC_SORT={key:'avg',dir:-1};
+function sortAssocs(k){if(ASSOC_SORT.key===k)ASSOC_SORT.dir*=-1;else{ASSOC_SORT.key=k;ASSOC_SORT.dir=(k==='assoc'||k==='housing'||k==='sr')?1:-1;}renderAdmAssocs();}
+function renderAdmAssocs(){
+  const hf=document.getElementById('f-housing').value;
+  const rows=Object.entries(D.assoc_meta).filter(([,m])=>!hf||m.housing_type===hf).map(([assoc,m])=>{
+    const ras=assocRAs(assoc);
+    const evs=ras.filter(r=>D.ra_data[r.name]).map(r=>D.ra_data[r.name]);
+    return{assoc,housing:m.housing_type,sr:m.sr_name,raCount:ras.length,evaluated:evs.length,resp:evs.reduce((s,e)=>s+e.responses,0),avg:overallAvg(evs),tr:assocTracking(assoc)};
+  }).sort(function(a,b){var k=ASSOC_SORT.key,d=ASSOC_SORT.dir;var va,vb;
+    if(k==='assoc'){va=a.assoc;vb=b.assoc;}else if(k==='housing'){va=a.housing||'';vb=b.housing||'';}else if(k==='sr'){va=a.sr||'';vb=b.sr||'';}
+    else if(k==='ras'){va=a.raCount;vb=b.raCount;}else if(k==='eval'){va=a.evaluated;vb=b.evaluated;}else if(k==='resp'){va=a.resp;vb=b.resp;}
+    else if(k==='rate'){va=a.tr.rate;vb=b.tr.rate;}else if(k==='thr'){va=a.tr.rate;vb=b.tr.rate;}else{va=a.avg;vb=b.avg;}
+    if(typeof va==='string')return d*va.localeCompare(vb);
+    va=(va===null||va===undefined)?-Infinity:va;vb=(vb===null||vb===undefined)?-Infinity:vb;
+    return d*(va-vb);});
+  const cnt={reward:0,mid:0,fail:0,na:0};rows.forEach(r=>cnt[r.tr.st.key]++);
+  const summary='<div class="stats" style="margin-bottom:16px"><div class="sc"><div class="sc-lbl">Reward Threshold Met</div><div class="sc-val" style="color:var(--green)">'+cnt.reward+'</div><div class="sc-sub">associations</div></div><div class="sc"><div class="sc-lbl">Between Thresholds</div><div class="sc-val" style="color:var(--yellow)">'+cnt.mid+'</div><div class="sc-sub">associations</div></div><div class="sc"><div class="sc-lbl">Below Failure</div><div class="sc-val" style="color:var(--red)">'+cnt.fail+'</div><div class="sc-sub">associations (SR accountable)</div></div></div>';
+  document.getElementById('adm-assoc-tbl').innerHTML=summary+'<table class="tbl"><thead><tr><th>#</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'assoc\')">'+sh('Association','assoc')+'</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'housing\')">'+sh('Housing','housing')+'</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'sr\')">'+sh('SR','sr')+'</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'ras\')">'+sh('RAs','ras')+'</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'eval\')">'+sh('Evaluated','eval')+'</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'resp\')">'+sh('Responses','resp')+'</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'rate\')">'+sh('Resp. Rate','rate')+'</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'thr\')">'+sh('Threshold','thr')+'</th><th style="cursor:pointer;user-select:none" onclick="sortAssocs(\'avg\')">'+sh('Average','avg')+'</th><th></th></tr></thead><tbody>'+rows.map(function(r,i){var rt=r.tr.rate!==null?r.tr.rate.toFixed(1)+'%':'—';var th=r.tr.st.t?'<span class="chip '+r.tr.st.cls+'" title="Failure below '+r.tr.st.t.fail+'%, reward at '+r.tr.st.t.reward+'%+">'+r.tr.st.label+'</span>':'<span class="chip cn">N/A</span>';return '<tr><td style="color:var(--label)">'+(i+1)+'</td><td style="font-weight:600">'+r.assoc+'</td><td style="color:var(--muted)">'+r.housing+'</td><td>'+fmtName(r.sr)+'</td><td>'+r.raCount+'</td><td>'+r.evaluated+'</td><td>'+r.resp+'</td><td style="font-weight:700;color:'+r.tr.st.color+'">'+rt+'</td><td>'+th+'</td><td>'+chip(r.avg)+'</td><td>'+xrBtn('xa'+i,'assoc',r.assoc)+'</td></tr>'+xrRow('xa'+i,11);}).join('')+'</tbody></table>';
+}
+var RA_SORT={key:'avg',dir:-1};
+function sortRAs(k){if(RA_SORT.key===k)RA_SORT.dir*=-1;else{RA_SORT.key=k;RA_SORT.dir=(k==='name'||k==='assoc'||k==='sr'||k==='housing')?1:-1;}renderAdmRAs();}
+function raSh(l,k){return l+(RA_SORT.key===k?(RA_SORT.dir>0?' ▲':' ▼'):' <span style="opacity:.3">↕</span>');}
+function allRAList(){
+  var m={};
+  (D.full_roster||[]).forEach(function(r){m[r.name]={name:r.name,association:r.association||'',sr_name:r.sr_name||'',housing_type:r.housing_type||'',expected:r.expected||0,responses:0,avg:null,concerns:[],has:false};});
+  Object.entries(D.ra_data||{}).forEach(function(p){var n=p[0],e=p[1];var o=m[n]||(m[n]={name:n,expected:0});
+    o.association=e.association||o.association||'';o.sr_name=e.sr_name||o.sr_name||'';o.housing_type=e.housing_type||o.housing_type||'';
+    o.responses=e.responses||0;o.avg=(e.avg===undefined?null:e.avg);o.concerns=e.concerns||[];o.has=true;});
+  return Object.values(m);
+}
+function renderAdmRAs(){
+  const af=document.getElementById('f-assoc').value,sf=document.getElementById('f-sr').value;
+  var rows=allRAList().filter(function(o){return(!af||o.association===af)&&(!sf||o.sr_name===sf);}).map(function(o){
+    o.rate=o.expected?o.responses/o.expected*100:null;return o;});
+  rows.sort(function(a,b){var k=RA_SORT.key,d=RA_SORT.dir,va,vb;
+    if(k==='name'){va=a.name;vb=b.name;}else if(k==='assoc'){va=a.association;vb=b.association;}else if(k==='sr'){va=a.sr_name;vb=b.sr_name;}
+    else if(k==='housing'){va=a.housing_type;vb=b.housing_type;}else if(k==='rate'){va=a.rate;vb=b.rate;}else{va=a.avg;vb=b.avg;}
+    if(typeof va==='string')return d*va.localeCompare(vb);
+    va=(va===null||va===undefined)?-Infinity:va;vb=(vb===null||vb===undefined)?-Infinity:vb;
+    if(va===vb)return a.name.localeCompare(b.name);
+    return d*(va-vb);});
+  function th(l,k){return '<th style="cursor:pointer;user-select:none" onclick="sortRAs(\''+k+'\')">'+raSh(l,k)+'</th>';}
+  var body=rows.map(function(o){
+    var safe=o.name.replace(/'/g,"\\'");
+    var concernTag=(o.concerns&&o.concerns.filter(realConcern).length)?' <span class="ctag">⚠ Concern</span>':'';
+    var rt=o.rate!==null?'<span style="font-weight:700;color:'+threshStatus(o.rate,o.housing_type).color+'">'+o.rate.toFixed(1)+'%</span> <span style="color:var(--muted);font-size:.75rem">('+o.responses+'/'+o.expected+')</span>':(o.has?o.responses+' <span style="color:var(--muted);font-size:.75rem">(no expected count)</span>':'<span style="color:var(--muted)">0%</span>');
+    return '<tr><td style="font-weight:600">'+fmtName(o.name)+concernTag+'</td><td>'+o.association+'</td><td>'+fmtName(o.sr_name)+'</td><td>'+o.housing_type+'</td><td>'+rt+'</td><td>'+(o.has?chip(o.avg):'<span class="chip cn">No evals yet</span>')+'</td><td>'+(o.has?'<button class="vbtn" onclick="showDetail(\''+safe+'\',\'adm-ras\')">View</button>':'')+'</td></tr>';
+  }).join('');
+  document.getElementById('adm-ra-tbl').innerHTML='<div style="color:var(--muted);font-size:.8rem;margin-bottom:8px">'+rows.length+' RAs · '+rows.filter(function(o){return!o.has;}).length+' with no evaluations yet</div><table class="tbl"><thead><tr>'+th('RA Name','name')+th('Association','assoc')+th('SR','sr')+th('Housing','housing')+th('Response Rate','rate')+th('Average','avg')+'<th></th></tr></thead><tbody>'+body+'</tbody></table>';
+}
+function showDetail(name,back){
+  nav('detail');
+  document.getElementById('detail-back').onclick=()=>nav(back);
+  const ev=D.ra_data[name],ra=D.full_roster.find(r=>r.name===name);
+  document.getElementById('d-name').textContent=fmtName(name);
+  document.getElementById('d-meta').textContent=`${ev.association} · SR: ${ev.sr_name} · ${ra?.housing_type||''}`;
+  document.getElementById('d-stats').innerHTML=statCards(ev,name);
+  document.getElementById('d-q5').innerHTML=scoreBars(ev.questions);
+  let c='';
+  const _canSeeConcerns = USER.role.type==='admin';
+  if(ev.concerns&&ev.concerns.filter(realConcern).length&&_canSeeConcerns)c='<div class="cbanner"><strong>⚠ Concerns for AD</strong><ul class="rlist" style="margin-top:8px">'+ev.concerns.filter(realConcern).map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul></div>';
+  c+=`<div class="card-t">What has your RA done to make you feel connected to your residential community this semester?</div>${respList(ev.q6)}<div class="card-t" style="margin-top:12px">Share a moment or a story where your RA made a positive impact on you.</div>${respList(ev.q8)}<div class="card-t" style="margin-top:12px">How else could your RA better serve you?</div>${respList(ev.q9)}`;
+  document.getElementById('d-comments').innerHTML=c;
+}
+
+function upStatCards(ev) {
+  const c=ev.avg===null?'var(--muted)':ev.avg>=3?'var(--green)':ev.avg>=2?'var(--yellow)':'var(--red)';
+  return '<div class="sc"><div class="sc-lbl">Overall Average</div><div class="sc-val" style="color:'+c+'">'+(ev.avg!==null?ev.avg.toFixed(2):'—')+'</div><div class="sc-sub">out of 4.00</div></div><div class="sc"><div class="sc-lbl">Responses</div><div class="sc-val" style="color:var(--text)">'+ev.responses+'</div><div class="sc-sub">submitted</div></div>';
+}
+// RA -> SR open-ended questions (full survey wording). open_4 is the confidential
+// "share only with Professional Staff" question and is deliberately not shown to SRs/RLCs.
+// ── Down-eval survey links ────────────────────────────────────
+// Each supervisor (SR, RLC, Pro-Staff) gets one box per person they evaluate.
+// The personal links come from the Qualtrics down-eval list (D.my_down_evals).
+function renderSRDownEvalLink(){
+  var el=document.getElementById('sr-downeval-card');
+  var list=(D&&D.my_down_evals)||[];
+  var role=(USER&&USER.role&&USER.role.type)||'';
+  var what=role==='sr'?'your RAs':role==='rlc'?'your Senior Residents':role==='pc'?'your RLLTs':'the people you supervise';
+  if(!list.length){
+    el.innerHTML='<div class="card-t">Your Down Evaluations</div><p style="margin:0;line-height:1.6;color:var(--muted)">There are no down evaluations assigned to you yet. If you expected to see some, let the Accountability team know.</p>';
+    return;
+  }
+  var sorted=list.slice().sort(function(a,b){return (a.done?1:0)-(b.done?1:0)||String(a.evaluatee).localeCompare(String(b.evaluatee));});
+  var remaining=sorted.filter(function(e){return !e.done;}).length;
+  var h='<div class="card-t">Your Down Evaluations</div>'+
+    '<p style="margin:0 0 4px;line-height:1.6">Complete one evaluation for each of '+what+' below. Down evaluations are due <b>11/13 at midnight</b>.</p>'+
+    '<p style="margin:0 0 16px;color:var(--muted);font-size:.85rem">'+(remaining?remaining+' of '+sorted.length+' left to complete. Each opens in a new tab.':'All '+sorted.length+' submitted. Thank you!')+'</p>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">';
+  sorted.forEach(function(e,i){
+    var safe=String(e.link||'').replace(/"/g,'&quot;');
+    h+='<div style="border:1px solid var(--border,#252c40);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;background:var(--bg2,transparent)">'+
+      '<div style="font-weight:700;font-size:1rem">'+fmtName(e.evaluatee)+'</div>'+
+      '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="chip cm">'+(e.role||'')+'</span>'+(e.association?'<span style="font-size:.78rem;color:var(--muted)">'+e.association+'</span>':'')+'</div>'+
+      (e.done?'<div class="chip ch" style="margin-top:8px;align-self:flex-start">&#10003; Submitted</div>':'<a href="'+safe+'" target="_blank" rel="noopener" style="margin-top:8px;display:inline-block;text-align:center;background:var(--blue);color:#fff;text-decoration:none;font-weight:700;padding:10px 16px;border-radius:9px">Open evaluation &rarr;</a>')+
+      '</div>';
+  });
+  h+='</div>';
+  el.innerHTML=h;
+}
+
+// ── My down evaluation: what my supervisor wrote about me ─────────────
+function renderMyDownReceived(){
+  var el=document.getElementById('my-down-card');
+  var list=(D&&D.my_down_received)||[];
+  if(!list.length){
+    el.innerHTML='<div class="card"><div class="card-t">Your Down Evaluation</div><p style="margin:0;line-height:1.6;color:var(--muted)">Your supervisor hasn\'t submitted their evaluation of you yet. It will show up here once they do.</p></div>';
+    return;
+  }
+  el.innerHTML=list.map(function(e){
+    var four=e.group==='sr_ra';
+    var c=e.avg===null?'var(--muted)':four?(e.avg>=3?'var(--green)':e.avg>=2?'var(--yellow)':'var(--red)'):(e.avg>=2.5?'var(--green)':e.avg>=1.5?'var(--yellow)':'var(--red)');
+    var stat='<div class="stats" style="margin-bottom:14px"><div class="sc"><div class="sc-lbl">Overall</div><div class="sc-val" style="'+(four?'':'font-size:1.25rem;')+'color:'+c+'">'+(e.avg===null?'—':four?e.avg.toFixed(2):label3(e.avg))+'</div><div class="sc-sub">'+(e.avg===null?'':four?'out of 4.00':e.avg.toFixed(2)+' / 3.00')+'</div></div></div>';
+    var open=(e.open||[]).map(function(o){return '<div style="margin:2px 0 14px"><div class="card-t" style="font-size:.8rem;text-transform:none;letter-spacing:0;line-height:1.45;font-weight:600">'+o.q+'</div><ul class="rlist"><li>'+o.a+'</li></ul></div>';}).join('');
+    return '<div class="card"><div class="card-t">From '+fmtName(e.from)+(e.from_role?' ('+e.from_role+')':'')+'</div>'+stat+(four?scoreBars(e.questions):scoreBars3(e.questions))+(open?'<div style="margin-top:14px">'+open+'</div>':'')+'</div>';
+  }).join('');
+}
+// ── Up-eval survey links ─────────────────────────────────────
+// Paste the Qualtrics survey URL for each up-eval here. Leave '' until the
+// link is ready and the page will show a "link coming soon" message.
+const UP_EVAL_LINKS = {
+  ra: '', sr: '', rllt: ''   // optional shared fallback URLs; personal links come from the Staff_Directory column
+};
+function renderRAUpEvalLink(){
+  var el=document.getElementById('ra-upeval-card');
+  var t=USER.role.type;
+  var cfg={ra:{who:'Senior Resident',short:'SR',title:'Submit My Up Evaluation'},
+           sr:{who:'Residential Learning Coordinator',short:'RLC',title:'Submit My Up Evaluation'},
+           rllt:{who:'Pro-Staff supervisor',short:'Pro-Staff',title:'Submit My Up Evaluation'}}[t]||{who:'supervisor',short:'supervisor',title:'Submit My Up Evaluation'};
+  var target='';
+  if(t==='ra'){target=((D.full_roster||[])[0]||{}).sr_name||'';}
+  else if(t==='sr'){var am=Object.values(D.assoc_meta||{}).find(function(m){return m.rlc_name;});target=am?am.rlc_name:'';}
+  var h1=document.querySelector('#s-ra-upeval h1');if(h1)h1.textContent=cfg.title;
+  var url=D.my_up_eval_link||UP_EVAL_LINKS[t]||'';
+  var body='<div class="card-t">Your Up Evaluation</div>'+
+    '<p style="margin:0 0 14px;line-height:1.6">'+(target?'You are evaluating <strong>'+fmtName(target)+'</strong>, your '+cfg.who+'.':'Use the button below to evaluate your '+cfg.who+'.')+'</p>';
+  if(D.my_up_eval_submitted){
+    body+='<div class="chip ch" style="display:inline-block">&#10003; Submitted</div><p style="margin:12px 0 0;color:var(--muted);font-size:.9rem">You have already submitted your up evaluation. Thank you!</p>';
+  } else if(url){
+    body+='<a href="'+url+'" target="_blank" rel="noopener" style="display:inline-block;background:var(--blue);color:#fff;text-decoration:none;font-weight:700;padding:11px 22px;border-radius:9px">Open My Up Evaluation &rarr;</a>'+
+      '<p style="margin:14px 0 0;color:var(--muted);font-size:.8rem;word-break:break-all">Or copy this link: '+url+'</p>';
+  } else {
+    body+='<div class="chip cn" style="display:inline-block">Link coming soon</div><p style="margin:12px 0 0;color:var(--muted);font-size:.83rem">Your up evaluation link isn\'t available yet. Check back soon or ask your supervisor.</p>';
+  }
+  el.innerHTML=body;
+}
+const RA_SR_LABELS = {
+  open_0:'Does the SR\u2019s attitude and level of enthusiasm positively reflect on the Resident Staff program and your residential community? Is the SR an active, positive, and contributing member of your community?',
+  open_1:'Has the SR developed a positive culture within the staff? Please describe the culture of your staff and how the SR has contributed to this culture.',
+  open_2:'In what areas of their role do you believe this Senior Resident has potential for further growth?',
+  open_3:'Do you have any other comments on the SR\u2019s performance?'
+};
+function submissionAccordions(subs,keys) {
+  if (!subs||!subs.length) return '<p style="color:var(--muted);font-size:.83rem">No submissions yet.</p>';
+  return subs.map(s=>{
+    const c=s.avg===null?'var(--muted)':s.avg>=3?'var(--green)':s.avg>=2?'var(--yellow)':'var(--red)';
+    let oh='';
+    if(s.open) Object.keys(keys||{}).forEach(k=>{if(s.open[k]) oh+='<div style="margin-bottom:8px"><div class="card-t" style="font-size:.8rem;text-transform:none;letter-spacing:0;line-height:1.45;font-weight:600">'+keys[k]+'</div><ul class="rlist"><li>'+s.open[k]+'</li></ul></div>';});
+    return '<div class="acc"><div class="acc-h" onclick="toggleAcc(this)"><span style="font-weight:600">'+fmtName(s.name)+'</span><span style="display:flex;align-items:center;gap:9px"><span style="color:'+c+';font-weight:700">'+(s.avg!==null?s.avg.toFixed(2):'N/A')+'</span><span class="chv">▼</span></span></div><div class="acc-b">'+scoreBars(s.questions)+oh+'</div></div>';
+  }).join('');
+}
+function renderSRUpEval() {
+  var srName = USER.role.name || USER.name;
+  var ev = D.ra_sr_data && D.ra_sr_data[srName];
+  if(!ev){
+    document.getElementById('sr-up-stats').innerHTML='<div class="sc"><div class="sc-lbl">Status</div><div class="sc-val" style="color:var(--muted)">No up eval data yet for '+fmtName(srName)+'</div></div>';
+    document.getElementById('sr-up-q5').innerHTML='';
+    document.getElementById('sr-up-open').innerHTML='';
+    return;
+  }
+  document.getElementById('sr-up-stats').innerHTML=upStatCards(ev);
+  document.getElementById('sr-up-q5').innerHTML=scoreBars(ev.questions);
+  document.getElementById('sr-up-open').innerHTML=submissionAccordions(ev.submissions||[],RA_SR_LABELS);
+}
+// SRs' associations / RAs, tolerant of name-spelling differences between sheets.
+function srAssocNames(sr){
+  var out=(D.sr_assocs&&D.sr_assocs[sr]||[]).slice();
+  Object.keys(D.assoc_meta||{}).forEach(function(a){var m=D.assoc_meta[a];
+    if(m.sr_name&&m.sr_name.toLowerCase().trim()===String(sr).toLowerCase().trim()&&!out.some(function(x){return akey(x)===akey(a);}))out.push(a);});
+  return out;
+}
+function srRAs(sr){
+  var keys=srAssocNames(sr).map(akey);
+  return (D.full_roster||[]).filter(function(r){return r.sr_name===sr||keys.indexOf(akey(r.association))>=0;});
+}
+function lchip(label,html){return '<span style="display:inline-flex;align-items:center;gap:5px"><span style="font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">'+label+'</span>'+html+'</span>';}
+function renderRLCSRs() {
+  const rlc=USER.role.name||USER.name;
+  const srs=(D.rlc_srs&&D.rlc_srs[rlc])||[];
+  const container=document.getElementById('rlc-sr-list');
+  if(!srs.length){container.innerHTML='<div class="empty">No Senior Residents found.</div>';return;}
+  const allEv=srs.flatMap(sr=>srRAs(sr).filter(r=>D.ra_data[r.name]).map(r=>D.ra_data[r.name]));
+  const avg=overallAvg(allEv);
+  const ac=avg===null?'var(--muted)':avg>=3?'var(--green)':avg>=2?'var(--yellow)':'var(--red)';
+  document.getElementById('rlc-sr-stats').innerHTML='<div class="sc"><div class="sc-lbl">Overall Average</div><div class="sc-val" style="color:'+ac+'">'+(avg?avg.toFixed(2):'—')+'</div></div><div class="sc"><div class="sc-lbl">Senior Residents</div><div class="sc-val">'+srs.length+'</div></div>';
+  var keyHtml='<div style="font-size:.76rem;color:var(--muted);margin:0 0 12px;line-height:1.6"><b>RA Evals</b> = average of residents\' evaluations of the SR\'s RAs (out of 4.00) &nbsp;&middot;&nbsp; <b>Up Eval</b> = average of the RAs\' evaluations of the SR (out of 4.00)</div>';
+  container.innerHTML=keyHtml+srs.map(sr=>{
+    const ras=srRAs(sr);
+    const evs=ras.filter(r=>D.ra_data[r.name]).map(r=>D.ra_data[r.name]);
+    const a=overallAvg(evs);
+    const upEv=D.ra_sr_data&&D.ra_sr_data[sr];
+    return '<div class="acc"><div class="acc-h" onclick="toggleAcc(this)"><span>'+fmtName(sr)+'</span><span style="display:flex;align-items:center;gap:8px">'+lchip('RA Evals',chip(a))+lchip('Up Eval',upEv?chip(upEv.avg):'<span class="chip cn">None yet</span>')+'<span class="chv">▼</span></span></div><div class="acc-b"><div class="role-section-title">Resident Evals ('+evs.length+'/'+ras.length+' RAs)</div>'+scoreBars(mergedQuestions(evs))+(upEv?'<div class="role-section-title" style="margin-top:12px">Up Eval ('+upEv.responses+' responses)</div>'+upStatCards(upEv)+scoreBars(upEv.questions)+submissionAccordions(upEv.submissions||[],RA_SR_LABELS):'<p style="color:var(--muted);font-size:.83rem">No up eval data yet.</p>')+'</div></div>';
+  }).join('');
+}
+function renderRLCAssocs() {
+  const srs=(D.rlc_srs&&D.rlc_srs[USER.role.name])||[];
+  const rows=[];
+  srs.forEach(sr=>{srAssocNames(sr).forEach(assoc=>{const ras=assocRAs(assoc);const evs=ras.filter(r=>D.ra_data[r.name]).map(r=>D.ra_data[r.name]);const m=D.assoc_meta[assoc]||{};rows.push({assoc,sr,ras,raCount:ras.length,evaluated:evs.length,responses:evs.reduce((s,e)=>s+e.responses,0),avg:overallAvg(evs),housing:m.housing_type||'—',tr:assocTracking(assoc)});});});
+  rows.sort((a,b)=>(b.avg||0)-(a.avg||0));
+  document.getElementById('rlc-assoc-list').innerHTML=rows.map(r=>{
+    const raBody = r.ras.length ? r.ras.map(ra=>{
+      const ev=D.ra_data[ra.name];
+      const _evHtml = ev
+        ? '<div class="stats" style="margin-bottom:14px">' + statCards(ev,ra.name) + '</div>' + scoreBars(ev.questions) + '<div style="margin-top:16px"><div class="card-t">What has your RA done to make you feel connected to your residential community this semester?</div>' + respList(ev.q6) + '<div class="card-t" style="margin-top:12px">Share a moment or a story where your RA made a positive impact on you.</div>' + respList(ev.q8) + '<div class="card-t" style="margin-top:12px">How else could your RA better serve you?</div>' + respList(ev.q9) + '</div>'
+        : '<p style="color:var(--muted);font-size:.83rem">No evals yet.</p>';
+      const _avgChip = ev ? chip(ev.avg) : '<span class="chip cn">No Data</span>';
+      const _rate = (ev && ra.expected) ? (ev.responses/ra.expected*100) : null;
+      const _respChip = ev ? rateChip(_rate, ra.housing_type || r.housing) : '';
+      return '<div class="acc"><div class="acc-h" onclick="toggleAcc(this)"><span>' + fmtName(ra.name) + '</span><span style="display:flex;align-items:center;gap:9px">' + _respChip + _avgChip + '<span class="chv">▼</span></span></div><div class="acc-b">' + _evHtml + '</div></div>';
+    }).join('') : '<p style="color:var(--muted);font-size:.83rem">No RAs found.</p>';
+    return '<div class="acc"><div class="acc-h" onclick="toggleAcc(this)"><span>'+r.assoc+' <span style="color:var(--muted);font-weight:400;font-size:.8rem">· '+r.housing+' · SR: '+fmtName(r.sr)+'</span></span><span style="display:flex;align-items:center;gap:9px"><span style="color:var(--muted);font-size:.8rem">'+r.evaluated+'/'+r.raCount+' RAs · '+r.responses+' responses</span>'+(r.tr.rate!==null?'<span class="chip '+r.tr.st.cls+'" title="'+r.tr.st.label+'">'+Math.round(r.tr.rate)+'% resp.</span>':'')+(r.avg!==null?chip(r.avg):'<span class="chip cn">No Data</span>')+'<span class="chv">▼</span></span></div><div class="acc-b"><div class="card" style="margin-bottom:14px"><div class="card-t">Response Rate Thresholds</div>'+thresholdTracker(r.tr)+'</div>'+raBody+'</div></div>';
+  }).join('');
+}
+// Full survey wording for the open-ended up-eval questions (matches the sheet headers).
+const OPEN_EXPAND = n => 'Expand upon any of these answers here ('+n+'):';
+const OPEN_ATTITUDE = 'Does the supervisor\u2019s attitude and level of enthusiasm positively reflect on the Resident Staff program and your residential community? Is the supervisor an active and positive member of your support team?';
+const OPEN_LEADER = 'Is your supervisor an effective leader? Do you feel your supervisor is a good role model for the resident staff program?';
+const OPEN_COMMENTS = 'Do you have any other comments on your supervisor\u2019s performance?';
+// RLLT -> Pro-Staff: 7 scored questions (4 admin, 3 interpersonal), 6 open fields
+const RLLT_PS_GROUPS = [
+  {count:4,key:'open_0',label:OPEN_EXPAND(1)},
+  {count:3,key:'open_1',label:OPEN_EXPAND(2)},
+  {count:0,key:'open_2',label:OPEN_ATTITUDE},
+  {count:0,key:'open_3',label:OPEN_LEADER},
+  {count:0,key:'open_4',label:'In what areas of their role do you believe your supervisor has potential for further growth?'},
+  {count:0,key:'open_5',label:OPEN_COMMENTS}
+];
+// SR -> RLC: 11 scored questions (4 + 3 + 4), 7 open fields
+const SR_RLC_GROUPS = [
+  {count:4,key:'open_0',label:OPEN_EXPAND(1)},
+  {count:3,key:'open_1',label:OPEN_EXPAND(2)},
+  {count:4,key:'open_2',label:OPEN_EXPAND(3)},
+  {count:0,key:'open_3',label:OPEN_ATTITUDE},
+  {count:0,key:'open_4',label:OPEN_LEADER},
+  {count:0,key:'open_5',label:'In what areas of their role do you believe this RLC has potential for further growth?'},
+  {count:0,key:'open_6',label:OPEN_COMMENTS}
+];
+function renderPSUpEval() {
+  const ev=D.rllt_ps_data&&D.rllt_ps_data[USER.role.name];
+  if(!ev){document.getElementById('ps-up-stats').innerHTML='<div class="sc"><div class="sc-lbl">Status</div><div class="sc-val" style="color:var(--muted)">No data yet</div></div>';document.getElementById('ps-up-q5').innerHTML='';return;}
+  document.getElementById('ps-up-stats').innerHTML=upStatCards3(ev);
+  document.getElementById('ps-up-q5').innerHTML=scoreBars3(ev.questions);
+  document.getElementById('ps-up-open').innerHTML=submissionAccordions3(ev.submissions||[],RLLT_PS_GROUPS);
+}
+function renderRLCUpEval() {
+  const rlcName = USER.role.name || USER.name;
+  const ev = D.sr_rlc_data && D.sr_rlc_data[rlcName];
+  if(!ev){document.getElementById('rlc-up-stats').innerHTML='<div class="sc"><div class="sc-lbl">Status</div><div class="sc-val" style="color:var(--muted)">No data yet</div></div>';document.getElementById('rlc-up-q5').innerHTML='';document.getElementById('rlc-up-open').innerHTML='';return;}
+  document.getElementById('rlc-up-stats').innerHTML=upStatCards3(ev);
+  document.getElementById('rlc-up-q5').innerHTML=scoreBars3(ev.questions);
+  document.getElementById('rlc-up-open').innerHTML=submissionAccordions3(ev.submissions||[],SR_RLC_GROUPS);
+}
+function renderRLLTUpEval() {
+  const subs = D.my_submissions || {};
+  const container = document.getElementById('rllt-up-content');
+  const names = Object.keys(subs);
+  if (!names.length) {
+    container.innerHTML = '<div class="empty">You haven\'t submitted an up-eval yet.</div>';
+    return;
+  }
+  const groups = RLLT_PS_GROUPS;
+  container.innerHTML = names.map(psName => {
+    const sub = subs[psName];
+    const qs = sub.questions || [];
+    let qi = 0, body = '';
+    groups.forEach(g => {
+      const slice = qs.slice(qi, qi + g.count);
+      qi += g.count;
+      if (slice.length) body += scoreBars3(slice);
+      if (sub.open && sub.open[g.key]) body += '<div style="margin:2px 0 16px"><div class="card-t" style="font-size:.8rem;text-transform:none;letter-spacing:0;line-height:1.45;font-weight:600">'+g.label+'</div><ul class="rlist"><li>'+sub.open[g.key]+'</li></ul></div>';
+    });
+    if (qi < qs.length) body += scoreBars3(qs.slice(qi));
+    return '<div class="card"><div class="card-t">Your evaluation of '+fmtName(psName)+'</div>'+body+'</div>';
+  }).join('');
+}
+
+// Expected up-eval submitters per evaluatee (admin view): who SHOULD have submitted.
+function nameTok(n){return String(n||'').toLowerCase().replace(/[^a-z\s]/g,' ').split(/\s+/).filter(Boolean).sort().join(' ');}
+function expectedUp(type,key){
+  var names=[];
+  if(type==='sr') names=srRAs(key).map(function(r){return r.name;}).filter(function(n){return nameTok(n)!==nameTok(key);}); // an SR who is also an RA doesn't evaluate themselves
+  else if(type==='rlc'){
+    Object.keys(D.rlc_srs||{}).forEach(function(k){if(nameTok(k)===nameTok(key))names=names.concat(D.rlc_srs[k]||[]);});
+    Object.keys(D.assoc_meta||{}).forEach(function(a){var m=D.assoc_meta[a];
+      if(m.rlc_name&&nameTok(m.rlc_name)===nameTok(key)&&m.sr_name&&!names.some(function(x){return nameTok(x)===nameTok(m.sr_name);}))names.push(m.sr_name);});
+  } else if(type==='ps'){Object.keys(D.ps_rllts||{}).forEach(function(k){if(nameTok(k)===nameTok(key))names=names.concat(D.ps_rllts[k]||[]);});}
+  var seen={};return names.filter(function(n){var t=nameTok(n);if(!t||seen[t])return false;seen[t]=1;return true;});
+}
+function upSlots(type,key,ev,renderSub,emptyLabel){
+  var exp=expectedUp(type,key),subs=(ev&&ev.submissions)||[],used={};
+  var html='';
+  var byTok={};subs.forEach(function(s,i){byTok[nameTok(s.name)]=i;});
+  var done=[],missing=[];
+  exp.forEach(function(n){var i=byTok[nameTok(n)];if(i===undefined)missing.push(n);else{done.push(subs[i]);used[i]=1;}});
+  subs.forEach(function(s,i){if(!used[i])done.push(s);});
+  var total=Math.max(exp.length,done.length);
+  html+='<div class="card-t" style="margin:18px 0 8px">Submissions ('+done.length+' of '+total+')</div>';
+  if(done.length)html+=renderSub(done);
+  html+=missing.map(function(n){return '<div class="acc"><div class="acc-h" style="cursor:default;opacity:.55"><span style="font-weight:600">'+fmtName(n)+'</span><span class="chip cn">'+emptyLabel+'</span></div></div>';}).join('');
+  if(!exp.length&&!done.length)html+='<p style="color:var(--muted);font-size:.83rem">No expected evaluators found.</p>';
+  return html;
+}
+function upRespCell(type,key,ev){var exp=expectedUp(type,key).length,n=ev?ev.responses:0;return n+' / '+Math.max(exp,n);}
+var UPSORT={sr:{key:'avg',dir:-1},rlc:{key:'avg',dir:-1},ps:{key:'avg',dir:-1}};
+var UPRENDER={sr:function(){renderAdmSRUpEvals();},rlc:function(){renderAdmRLCUpEvals();},ps:function(){renderAdmRLLTUpEvals();}};
+function upSort(t,k){var o=UPSORT[t];if(o.key===k)o.dir*=-1;else{o.key=k;o.dir=k==='name'?1:-1;}UPRENDER[t]();}
+function upTh(t,label,k){var o=UPSORT[t];return '<th style="cursor:pointer;user-select:none" onclick="upSort(\''+t+'\',\''+k+'\')">'+label+(o.key===k?(o.dir>0?' ▲':' ▼'):' <span style="opacity:.3">↕</span>')+'</th>';}
+function upPrep(t,rows){rows.forEach(function(r){var ex=expectedUp(t,r.name).length;r.sub=r.responses||0;r.exp=Math.max(ex,r.sub);r.rate=r.exp?r.sub/r.exp:-1;});
+  var o=UPSORT[t];rows.sort(function(a,b){var x,y;if(o.key==='name'){return o.dir*String(a.name).localeCompare(b.name);}
+    x=o.key==='avg'?(a.avg===null?-1:a.avg):a[o.key];y=o.key==='avg'?(b.avg===null?-1:b.avg):b[o.key];return o.dir*(x-y)||String(a.name).localeCompare(b.name);});return rows;}
+
+// ── Admin: down evaluations overview (supervisor -> supervisee) ───────────
+var DOWN_CFG={
+  sr_ra:  {tbl:'adm-sr-down-tbl',  head:'SR',        sub:'RAs',  four:true},
+  rlc_sr: {tbl:'adm-rlc-down-tbl', head:'RLC',       sub:'SRs',  four:false},
+  ps_rllt:{tbl:'adm-ps-down-tbl',  head:'Pro-Staff', sub:'RLLTs',four:false}
+};
+var DOWNSORT={sr_ra:{key:'avg',dir:-1},rlc_sr:{key:'avg',dir:-1},ps_rllt:{key:'avg',dir:-1}};
+function downSort(g,k){var o=DOWNSORT[g];if(o.key===k)o.dir*=-1;else{o.key=k;o.dir=k==='name'?1:-1;}renderAdmDown(g);}
+function downTh(g,label,k){var o=DOWNSORT[g];return '<th style="cursor:pointer;user-select:none" onclick="downSort(\''+g+'\',\''+k+'\')">'+label+(o.key===k?(o.dir>0?' ▲':' ▼'):' <span style="opacity:.3">↕</span>')+'</th>';}
+// One summary per evaluator: expected evaluatees, submissions (latest per evaluatee), counts, average.
+function downSummary(g){
+  var exp=(D.down_eval_expected||{})[g]||{},data=(D.down_eval_data||{})[g]||{},out={};
+  Object.keys(exp).forEach(function(n){var t=nameTok(n);out[t]=out[t]||{name:n,exp:[],subs:[]};out[t].exp=out[t].exp.concat(exp[n]);});
+  Object.keys(data).forEach(function(n){var t=nameTok(n);out[t]=out[t]||{name:n,exp:[],subs:[]};out[t].subs=out[t].subs.concat(data[n].submissions||[]);});
+  return Object.keys(out).map(function(t){
+    var o=out[t],seen={},ex=[];o.exp.forEach(function(x){var k=nameTok(x);if(!seen[k]){seen[k]=1;ex.push(x);}});
+    var byTok={};o.subs.forEach(function(sb){byTok[nameTok(sb.evaluatee)]=sb;});   // latest wins
+    var subs=Object.keys(byTok).map(function(k){return byTok[k];});
+    var avgs=subs.map(function(x){return x.avg;}).filter(function(v){return v!==null&&v!==undefined;});
+    var avg=avgs.length?avgs.reduce(function(a,b){return a+b;},0)/avgs.length:null;
+    var expTotal=Math.max(ex.length,subs.length);
+    return{name:o.name,exp:ex,subs:subs,byTok:byTok,sub:subs.length,total:expTotal,rate:expTotal?subs.length/expTotal:-1,avg:avg};
+  });
+}
+function renderAdmDown(g){
+  var c=DOWN_CFG[g],rows=downSummary(g),o=DOWNSORT[g];
+  rows.sort(function(a,b){if(o.key==='name')return o.dir*String(a.name).localeCompare(b.name);
+    var x=o.key==='avg'?(a.avg===null?-1:a.avg):a[o.key],y=o.key==='avg'?(b.avg===null?-1:b.avg):b[o.key];
+    return o.dir*(x-y)||String(a.name).localeCompare(b.name);});
+  var el=document.getElementById(c.tbl);
+  if(!rows.length){el.innerHTML='<p style="color:var(--muted)">No down evaluations set up yet.</p>';return;}
+  var done=rows.reduce(function(a,r){return a+r.sub;},0),all=rows.reduce(function(a,r){return a+r.total;},0);
+  var summary='<div style="color:var(--muted);font-size:.85rem;margin:0 0 12px">'+done+' of '+all+' down evaluations submitted</div>';
+  var concernsHtml='';
+  if(g==='sr_ra'){
+    var cl=[];rows.forEach(function(r){r.subs.forEach(function(sb){var a=sb.open&&sb.open.open_4;if(a&&String(a).trim().toLowerCase()!=='n/a'&&String(a).trim().toLowerCase()!=='none')cl.push({from:r.name,about:sb.evaluatee,a:a});});});
+    if(cl.length)concernsHtml='<div class="card" style="margin-top:16px"><div class="card-t">⚠ Concerns for AD</div>'+cl.map(function(c){return '<div style="margin-bottom:10px"><div style="font-weight:600;margin-bottom:4px">'+fmtName(c.from)+' about '+fmtName(c.about)+'</div><ul class="rlist" style="margin-top:0"><li>'+c.a+'</li></ul></div>';}).join('')+'</div>';
+  }
+  el.innerHTML=summary+'<table class="tbl"><thead><tr>'+downTh(g,c.head,'name')+downTh(g,'Submitted / Expected','rate')+downTh(g,c.four?'Average':'Rating','avg')+'<th></th></tr></thead><tbody>'+
+    rows.map(function(r,i){var id='dn'+g+i;
+      return '<tr><td style="font-weight:600">'+fmtName(r.name)+'</td><td>'+r.sub+' / '+r.total+'</td><td>'+(r.avg===null?'<span class="chip cn">No evals</span>':(c.four?chip(r.avg):chip3(r.avg)))+'</td><td>'+xrBtn(id,'dn_'+g,r.name)+'</td></tr>'+xrRow(id,4);}).join('')+'</tbody></table>'+concernsHtml;
+}
+function downDetailHtml(g,key){
+  var c=DOWN_CFG[g],lab=(D.down_eval_labels||{})[g]||{open:[]},r=downSummary(g).filter(function(x){return nameTok(x.name)===nameTok(key);})[0];
+  if(!r)return '<p style="color:var(--muted)">No data.</p>';
+  var order=r.exp.slice(),have={};order.forEach(function(n){have[nameTok(n)]=1;});
+  r.subs.forEach(function(sb){if(!have[nameTok(sb.evaluatee)]){order.push(sb.evaluatee);}});
+  order.sort(function(a,b){return String(a).localeCompare(String(b));});
+  var html='<div class="card-t" style="margin:0 0 8px">Evaluations ('+r.sub+' of '+r.total+')</div>';
+  order.forEach(function(n){
+    var sb=r.byTok[nameTok(n)];
+    if(!sb){html+='<div class="acc"><div class="acc-h" style="cursor:default;opacity:.55"><span style="font-weight:600">'+fmtName(n)+'</span><span class="chip cn">Not submitted</span></div></div>';return;}
+    var body=(c.four?scoreBars(sb.questions):scoreBars3(sb.questions));
+    (lab.open||[]).forEach(function(q,i){var a=sb.open&&sb.open['open_'+i];
+      if(a)body+='<div style="margin:2px 0 14px"><div class="card-t" style="font-size:.8rem;text-transform:none;letter-spacing:0;line-height:1.45;font-weight:600">'+q+'</div><ul class="rlist"><li>'+a+'</li></ul></div>';});
+    html+='<div class="acc"><div class="acc-h" onclick="toggleAcc(this)"><span style="font-weight:600">'+fmtName(sb.evaluatee)+(sb.role?' <span style="font-weight:400;color:var(--muted);font-size:.78rem">· '+sb.role+'</span>':'')+'</span><span style="display:flex;align-items:center;gap:9px">'+(c.four?chip(sb.avg):chip3(sb.avg))+'<span class="chv">▼</span></span></div><div class="acc-b">'+body+'</div></div>';
+  });
+  return html;
+}
+function renderAdmSRUpEvals() {
+  const srNames={};Object.keys(D.ra_sr_data||{}).forEach(n=>{srNames[nameTok(n)]=n;});
+  Object.keys(D.sr_assocs||{}).forEach(n=>{if(!srNames[nameTok(n)])srNames[nameTok(n)]=n;});
+  Object.values(D.assoc_meta||{}).forEach(m=>{if(m.sr_name&&!srNames[nameTok(m.sr_name)])srNames[nameTok(m.sr_name)]=m.sr_name;});
+  const rows=upPrep('sr',Object.values(srNames).map(n=>{const e=(D.ra_sr_data||{})[n]||null;return{
+    name:n,avg:e?e.avg:null,ev:e,responses:e?e.responses:0,
+    concerns:e?(e.submissions||[]).map(s=>s.open&&s.open.open_4).filter(Boolean):[]
+  };}));
+  document.getElementById('adm-sr-up-tbl').innerHTML=rows.length?'<table class="tbl"><thead><tr>'+upTh('sr','SR','name')+upTh('sr','Submitted / Expected','rate')+upTh('sr','Average','avg')+'<th></th></tr></thead><tbody>'+rows.map((r,i)=>'<tr><td style="font-weight:600">'+fmtName(r.name)+(r.concerns.length?' <span class="ctag">⚠ Concern</span>':'')+'</td><td>'+upRespCell('sr',r.name,r.ev)+'</td><td>'+(r.ev?chip(r.avg):'<span class="chip cn">No evals</span>')+'</td><td>'+xrBtn('xs'+i,'sr',r.name)+'</td></tr>'+xrRow('xs'+i,4)).join('')+'</tbody></table>':'<p style="color:var(--muted)">No data yet.</p>';
+  const flagged=rows.filter(r=>r.concerns.length);
+  document.getElementById('adm-sr-up-concerns').innerHTML=flagged.length?'<div class="card" style="margin-top:16px"><div class="card-t">⚠ Concerns for AD</div>'+flagged.map(r=>'<div style="margin-bottom:10px"><div style="font-weight:600;margin-bottom:4px">'+fmtName(r.name)+'</div><ul class="rlist" style="margin-top:0">'+r.concerns.map(c=>'<li>'+c+'</li>').join('')+'</ul></div>').join('')+'</div>':'';
+}
+function renderAdmRLCUpEvals() {
+  const nm={};Object.keys(D.sr_rlc_data||{}).forEach(n=>{nm[nameTok(n)]=n;});
+  Object.keys(D.rlc_srs||{}).forEach(n=>{if(!nm[nameTok(n)])nm[nameTok(n)]=n;});
+  Object.values(D.assoc_meta||{}).forEach(m=>{if(m.rlc_name&&!nm[nameTok(m.rlc_name)])nm[nameTok(m.rlc_name)]=m.rlc_name;});
+  const rows=upPrep('rlc',Object.values(nm).map(n=>{const e=(D.sr_rlc_data||{})[n]||null;return{name:n,ev:e,avg:e?e.avg:null,responses:e?e.responses:0};}));
+  document.getElementById('adm-rlc-up-tbl').innerHTML=rows.length?'<table class="tbl"><thead><tr>'+upTh('rlc','RLC','name')+upTh('rlc','Submitted / Expected','rate')+upTh('rlc','Rating','avg')+'<th></th></tr></thead><tbody>'+rows.map((r,i)=>'<tr><td style="font-weight:600">'+fmtName(r.name)+'</td><td>'+upRespCell('rlc',r.name,r.ev)+'</td><td>'+(r.ev?chip3(r.avg):'<span class="chip cn">No evals</span>')+'</td><td>'+xrBtn('xl'+i,'rlc',r.name)+'</td></tr>'+xrRow('xl'+i,4)).join('')+'</tbody></table>':'<p style="color:var(--muted)">No data yet.</p>';
+}
+function renderAdmRLLTUpEvals() {
+  const nm={};Object.keys(D.rllt_ps_data||{}).forEach(n=>{nm[nameTok(n)]=n;});
+  Object.keys(D.ps_rllts||{}).forEach(n=>{if(!nm[nameTok(n)])nm[nameTok(n)]=n;});
+  const rows=upPrep('ps',Object.values(nm).map(n=>{const e=(D.rllt_ps_data||{})[n]||null;return{name:n,ev:e,avg:e?e.avg:null,responses:e?e.responses:0};}));
+  document.getElementById('adm-rllt-up-tbl').innerHTML=rows.length?'<table class="tbl"><thead><tr>'+upTh('ps','Pro-Staff','name')+upTh('ps','Submitted / Expected','rate')+upTh('ps','Rating','avg')+'<th></th></tr></thead><tbody>'+rows.map((r,i)=>'<tr><td style="font-weight:600">'+fmtName(r.name)+'</td><td>'+upRespCell('ps',r.name,r.ev)+'</td><td>'+(r.ev?chip3(r.avg):'<span class="chip cn">No evals</span>')+'</td><td>'+xrBtn('xp'+i,'ps',r.name)+'</td></tr>'+xrRow('xp'+i,4)).join('')+'</tbody></table>':'<p style="color:var(--muted)">No data yet.</p>';
+}
+
+function renderRLCAnalytics() {
+  const srs = (D.rlc_srs && D.rlc_srs[USER.role.name]) || [];
+  const myRAs = (D.full_roster || []).filter(r => srs.includes(r.sr_name));
+  const allEv = myRAs.filter(r => D.ra_data[r.name]).map(r => D.ra_data[r.name]);
+
+  if (!allEv.length) {
+    document.getElementById('rlc-analytics-stats').innerHTML = '<div class="sc"><div class="sc-lbl">Status</div><div class="sc-val" style="color:var(--muted)">No eval data yet</div></div>';
+    return;
+  }
+
+  const totalResp = allEv.reduce((s,e) => s+e.responses, 0);
+  const sorted = myRAs.filter(r => D.ra_data[r.name]).map(r => ({name:r.name, avg:D.ra_data[r.name].avg})).sort((a,b) => b.avg-a.avg);
+
+  function htAvg(ht) {
+    const evs = allEv.filter(ev => { const m=D.assoc_meta[ev.association]; return m&&m.housing_type===ht; });
+    return evs.length ? overallAvg(evs) : null;
+  }
+  const fyAvg=htAvg('First-Year'), ucAvg=htAvg('Upperclass'), rcAvg=htAvg('Residential College');
+  function scVal(v) {
+    if(v===null) return '<span style="color:var(--muted)">—</span>';
+    const col=v>=3?'var(--green)':v>=2?'var(--yellow)':'var(--red)';
+    return '<span style="color:'+col+'">'+v.toFixed(2)+'</span>';
+  }
+
+  document.getElementById('rlc-analytics-stats').innerHTML =
+    '<div class="sc"><div class="sc-lbl">First-Year Average</div><div class="sc-val" style="font-size:1.7rem">'+scVal(fyAvg)+'</div><div class="sc-sub">out of 4.00</div></div>' +
+    '<div class="sc"><div class="sc-lbl">Upperclass Average</div><div class="sc-val" style="font-size:1.7rem">'+scVal(ucAvg)+'</div><div class="sc-sub">out of 4.00</div></div>' +
+    '<div class="sc"><div class="sc-lbl">Res College Average</div><div class="sc-val" style="font-size:1.7rem">'+scVal(rcAvg)+'</div><div class="sc-sub">out of 4.00</div></div>' +
+    '<div class="sc"><div class="sc-lbl">Total Responses</div><div class="sc-val" style="color:var(--text)">'+totalResp+'</div><div class="sc-sub">across your RAs</div></div>';
+
+  barChart('c-rlc-ra', sorted.map(r=>fmtName(r.name)), sorted.map(r=>r.avg), '#00d67a');
+  const assocMap={};
+  allEv.forEach(ev=>{const a=ev.association||'Unknown';(assocMap[a]=assocMap[a]||[]).push(ev);});
+  const assocRows=Object.entries(assocMap).map(([a,evs])=>({a,avg:overallAvg(evs)})).sort((a,b)=>b.avg-a.avg);
+  barChart('c-rlc-assoc', assocRows.map(r=>r.a.split('/')[0]), assocRows.map(r=>r.avg), '#00d67a', true);
+  const merged=mergedQuestions(allEv);
+  barChart('c-rlc-cat', merged.map(q=>q.text.slice(0,20)+'…'), merged.map(q=>q.score||0), '#3d7fff', false, merged.map(q=>q.text));
+}
+</script>
+</body>
+</html>

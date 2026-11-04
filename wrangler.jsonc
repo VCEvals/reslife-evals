@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "reslife-evals",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-21",
+  "assets": {
+    "directory": "./public"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "RESLIFE_DATA",
+      "id": "d20ac2236c124884b1ee1e60df357d8d"
+    }
+  ]
+}
