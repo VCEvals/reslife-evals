@@ -997,6 +997,19 @@ function upStatCards(ev) {
 // ── Down-eval survey links ────────────────────────────────────
 // Each supervisor (SR, RLC, Pro-Staff) gets one box per person they evaluate.
 // The personal links come from the Qualtrics down-eval list (D.my_down_evals).
+function mySubmittedDownHtml(){
+  var list=(D&&D.my_down_submitted)||[];
+  if(!list.length)return '';
+  list=list.slice().sort(function(a,b){return String(a.evaluatee).localeCompare(String(b.evaluatee));});
+  return '<div class="card-t" style="margin:26px 0 4px">Your Submitted Evaluations</div>'+
+    '<p style="margin:0 0 12px;color:var(--muted);font-size:.85rem">What you submitted. Only you and the Accountability team can see these.</p>'+
+    list.map(function(e){
+      var four=e.group==='sr_ra';
+      var body=(four?scoreBars(e.questions):scoreBars3(e.questions));
+      (e.open||[]).forEach(function(o){body+='<div style="margin:2px 0 14px"><div class="card-t" style="font-size:.8rem;text-transform:none;letter-spacing:0;line-height:1.45;font-weight:600">'+o.q+'</div><ul class="rlist"><li>'+o.a+'</li></ul></div>';});
+      return '<div class="acc"><div class="acc-h" onclick="toggleAcc(this)"><span style="font-weight:600">'+fmtName(e.evaluatee)+(e.role?' <span style="font-weight:400;color:var(--muted);font-size:.78rem">· '+e.role+'</span>':'')+'</span><span style="display:flex;align-items:center;gap:9px">'+(four?chip(e.avg):chip3(e.avg))+'<span class="chv">▼</span></span></div><div class="acc-b">'+body+'</div></div>';
+    }).join('');
+}
 function renderSRDownEvalLink(){
   var el=document.getElementById('sr-downeval-card');
   var list=(D&&D.my_down_evals)||[];
@@ -1021,7 +1034,7 @@ function renderSRDownEvalLink(){
       '</div>';
   });
   h+='</div>';
-  el.innerHTML=h;
+  el.innerHTML=h+mySubmittedDownHtml();
 }
 
 // ── My down evaluation: what my supervisor wrote about me ─────────────

@@ -113,6 +113,11 @@ async function handleMyData(request, env) {
     const myDown = (raw.down_eval_links || {})[String(entry.name || '').toLowerCase().replace(/\s+/g, ' ').trim()];
     if (myDown && myDown.length) scoped.my_down_evals = markDownDone(raw, entry.name, myDown);
   }
+  // Down evaluations this person has SUBMITTED (their own answers, shown back to them).
+  if (scoped && typeof scoped === 'object' && entry.role) {
+    const mine = downSubmittedBy(raw, entry.name);
+    if (mine.length) scoped.my_down_submitted = mine;
+  }
   // Down evaluations written ABOUT this person (their supervisor's evaluation of them).
   // The confidential "share only with Professional Staff" question is never included.
   if (scoped && typeof scoped === 'object' && String(entry.role).toLowerCase() !== 'admin') {
@@ -277,6 +282,28 @@ function markDownDone(raw, evaluator, list) {
   });
 }
 
+
+// Everything this person submitted as an evaluator (all of their own answers).
+function downSubmittedBy(raw, name) {
+  const me = nameTok2(name);
+  const out = [];
+  Object.keys(raw.down_eval_data || {}).forEach(function (g) {
+    const labels = ((raw.down_eval_labels || {})[g] || {}).open || [];
+    const byEval = raw.down_eval_data[g] || {};
+    Object.keys(byEval).forEach(function (evaluator) {
+      if (nameTok2(evaluator) !== me) return;
+      (byEval[evaluator].submissions || []).forEach(function (sb) {
+        const open = [];
+        labels.forEach(function (q, i) {
+          const a = sb.open && sb.open['open_' + i];
+          if (a) open.push({ q: q, a: a });
+        });
+        out.push({ group: g, evaluatee: sb.evaluatee, role: sb.role || '', association: sb.association || '', avg: sb.avg, questions: sb.questions || [], open: open });
+      });
+    });
+  });
+  return out;
+}
 // Open-question indexes that must never reach the person being evaluated.
 const DOWN_CONFIDENTIAL_OPEN = { sr_ra: [4] };
 function downReceivedFor(raw, name) {
