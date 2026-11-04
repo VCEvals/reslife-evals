@@ -1001,8 +1001,7 @@ function mySubmittedDownHtml(){
   var list=(D&&D.my_down_submitted)||[];
   if(!list.length)return '';
   list=list.slice().sort(function(a,b){return String(a.evaluatee).localeCompare(String(b.evaluatee));});
-  return '<div class="card-t" style="margin:26px 0 4px">Your Submitted Evaluations</div>'+
-    '<p style="margin:0 0 12px;color:var(--muted);font-size:.85rem">What you submitted. Only you and the Accountability team can see these.</p>'+
+  return '<div class="card-t" style="margin:26px 0 12px">Your Submitted Evaluations</div>'+
     list.map(function(e){
       var four=e.group==='sr_ra';
       var body=(four?scoreBars(e.questions):scoreBars3(e.questions));
